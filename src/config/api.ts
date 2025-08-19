@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = (window as any).__ENV__?.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 export const API_ENDPOINTS = {
   // Auth endpoints
