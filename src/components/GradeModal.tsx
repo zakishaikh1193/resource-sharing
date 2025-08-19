@@ -4,7 +4,6 @@ import { X, Save, Loader2 } from 'lucide-react';
 interface Grade {
   grade_id?: number;
   grade_level: string;
-  grade_number: number;
   description: string;
 }
 
@@ -25,7 +24,6 @@ const GradeModal: React.FC<GradeModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Grade>({
     grade_level: '',
-    grade_number: 1,
     description: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +34,6 @@ const GradeModal: React.FC<GradeModalProps> = ({
     } else {
       setFormData({
         grade_level: '',
-        grade_number: 1,
         description: ''
       });
     }
@@ -88,20 +85,7 @@ const GradeModal: React.FC<GradeModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Grade Number
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={formData.grade_number}
-              onChange={(e) => setFormData({ ...formData, grade_number: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
+          
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

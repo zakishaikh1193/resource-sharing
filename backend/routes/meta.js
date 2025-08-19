@@ -43,12 +43,12 @@ router.get('/subjects', async (req, res) => {
 // Create a new grade
 router.post('/grades', async (req, res) => {
   try {
-    const { grade_level, grade_number, description } = req.body;
+    const { grade_level, description } = req.body;
 
     // Check if grade already exists
     const [existing] = await pool.execute(
-      'SELECT * FROM grades WHERE grade_level = ? OR grade_number = ?',
-      [grade_level, grade_number]
+      'SELECT * FROM grades WHERE grade_level = ?',
+      [grade_level]
     );
 
     if (existing.length > 0) {
@@ -59,8 +59,8 @@ router.post('/grades', async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO grades (grade_level, grade_number, description) VALUES (?, ?, ?)',
-      [grade_level, grade_number, description]
+      'INSERT INTO grades (grade_level, description) VALUES (?, ?)',
+      [grade_level, description]
     );
 
     res.status(201).json({
@@ -81,7 +81,7 @@ router.post('/grades', async (req, res) => {
 router.put('/grades/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { grade_level, grade_number, description } = req.body;
+    const { grade_level, description } = req.body;
 
     // Check if grade exists
     const [existing] = await pool.execute(
@@ -96,22 +96,22 @@ router.put('/grades/:id', async (req, res) => {
       });
     }
 
-    // Check if new grade_level or grade_number conflicts with other grades
+    // Check if new grade_level conflicts with other grades
     const [conflict] = await pool.execute(
-      'SELECT * FROM grades WHERE (grade_level = ? OR grade_number = ?) AND grade_id != ?',
-      [grade_level, grade_number, id]
+      'SELECT * FROM grades WHERE grade_level = ? AND grade_id != ?',
+      [grade_level, id]
     );
 
     if (conflict.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Grade level or number already exists'
+        message: 'Grade level already exists'
       });
     }
 
     await pool.execute(
-      'UPDATE grades SET grade_level = ?, grade_number = ?, description = ? WHERE grade_id = ?',
-      [grade_level, grade_number, description, id]
+      'UPDATE grades SET grade_level = ?, description = ? WHERE grade_id = ?',
+      [grade_level, description, id]
     );
 
     res.json({
@@ -173,7 +173,7 @@ router.delete('/grades/:id', async (req, res) => {
 // Create a new subject
 router.post('/subjects', async (req, res) => {
   try {
-    const { subject_name, description, color } = req.body;
+    const { subject_name, description } = req.body;
 
     // Check if subject already exists
     const [existing] = await pool.execute(
@@ -189,8 +189,8 @@ router.post('/subjects', async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO subjects (subject_name, description, color) VALUES (?, ?, ?)',
-      [subject_name, description, color]
+      'INSERT INTO subjects (subject_name, description) VALUES (?, ?)',
+      [subject_name, description]
     );
 
     res.status(201).json({
@@ -211,7 +211,7 @@ router.post('/subjects', async (req, res) => {
 router.put('/subjects/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { subject_name, description, color } = req.body;
+    const { subject_name, description } = req.body;
 
     // Check if subject exists
     const [existing] = await pool.execute(
@@ -240,8 +240,8 @@ router.put('/subjects/:id', async (req, res) => {
     }
 
     await pool.execute(
-      'UPDATE subjects SET subject_name = ?, description = ?, color = ? WHERE subject_id = ?',
-      [subject_name, description, color, id]
+      'UPDATE subjects SET subject_name = ?, description = ? WHERE subject_id = ?',
+      [subject_name, description, id]
     );
 
     res.json({

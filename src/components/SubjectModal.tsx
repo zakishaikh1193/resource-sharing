@@ -5,7 +5,6 @@ interface Subject {
   subject_id?: number;
   subject_name: string;
   description: string;
-  color: string;
 }
 
 interface SubjectModalProps {
@@ -25,16 +24,9 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Subject>({
     subject_name: '',
-    description: '',
-    color: '#3B82F6'
+    description: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-
-  const colorOptions = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
-    '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
-  ];
 
   useEffect(() => {
     if (subject && mode === 'edit') {
@@ -42,8 +34,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
     } else {
       setFormData({
         subject_name: '',
-        description: '',
-        color: '#3B82F6'
+        description: ''
       });
     }
   }, [subject, mode, isOpen]);
@@ -108,33 +99,7 @@ const SubjectModal: React.FC<SubjectModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color
-            </label>
-            <div className="flex items-center space-x-3">
-              <div className="flex space-x-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      formData.color === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-              <input
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-          </div>
+          
 
           <div className="flex items-center justify-end space-x-3 pt-4">
             <button

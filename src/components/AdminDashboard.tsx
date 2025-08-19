@@ -1171,28 +1171,31 @@ const AdminDashboard: React.FC = () => {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Subjects</h3>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                  <button 
+                    onClick={() => openSubjectModal('create')}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
                     Add Subject
                   </button>
                 </div>
                 <div className="space-y-2">
                   {subjects.map(subject => (
                     <div key={subject.subject_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <div 
-                          className="w-3 h-3 rounded-full mr-3" 
-                          style={{ backgroundColor: subject.color || '#6B7280' }}
-                        ></div>
-                        <div>
-                          <span className="font-medium text-gray-900">{subject.subject_name}</span>
-                          <p className="text-sm text-gray-500">{subject.description}</p>
-                        </div>
+                      <div>
+                        <span className="font-medium text-gray-900">{subject.subject_name}</span>
+                        <p className="text-sm text-gray-500">{subject.description}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-700 p-1">
+                        <button 
+                          onClick={() => openSubjectModal('edit', subject)}
+                          className="text-blue-600 hover:text-blue-700 p-1"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-700 p-1">
+                        <button 
+                          onClick={() => handleDeleteSubject(subject.subject_id)}
+                          className="text-red-600 hover:text-red-700 p-1"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -1234,6 +1237,24 @@ const AdminDashboard: React.FC = () => {
         onClose={() => setShowResourceModal(false)}
         onSubmit={handleCreateResource}
         initialGrade={1}
+      />
+
+      {/* Grade Modal */}
+      <GradeModal
+        isOpen={showGradeModal}
+        onClose={() => setShowGradeModal(false)}
+        onSubmit={gradeModalMode === 'create' ? handleCreateGrade : handleUpdateGrade}
+        grade={selectedGrade}
+        mode={gradeModalMode}
+      />
+
+      {/* Subject Modal */}
+      <SubjectModal
+        isOpen={showSubjectModal}
+        onClose={() => setShowSubjectModal(false)}
+        onSubmit={subjectModalMode === 'create' ? handleCreateSubject : handleUpdateSubject}
+        subject={selectedSubject}
+        mode={subjectModalMode}
       />
     </div>
   );
