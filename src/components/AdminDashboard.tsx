@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List } from 'lucide-react';
+import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
 import GradeModal from './GradeModal';
 import SubjectModal from './SubjectModal';
+import ResourceViewModal from './ResourceViewModal';
+import ResourceEditModal from './ResourceEditModal';
 
 interface User {
   user_id: number;
@@ -57,8 +59,12 @@ const AdminDashboard: React.FC = () => {
   const [showResourceModal, setShowResourceModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [showResourceViewModal, setShowResourceViewModal] = useState(false);
+  const [showResourceEditModal, setShowResourceEditModal] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState<any>(null);
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
+  const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [resourceTypes, setResourceTypes] = useState<any[]>([]);
   const [gradeModalMode, setGradeModalMode] = useState<'create' | 'edit'>('create');
   const [subjectModalMode, setSubjectModalMode] = useState<'create' | 'edit'>('create');
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata' | 'settings'>('overview');
@@ -68,6 +74,7 @@ const AdminDashboard: React.FC = () => {
     fetchResources();
     fetchGrades();
     fetchSubjects();
+    fetchResourceTypes();
   }, [token]);
 
   const fetchUsers = async () => {
@@ -137,6 +144,28 @@ const AdminDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching subjects:', error);
+    }
+  };
+
+  const fetchResourceTypes = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/meta/resource-types', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setResourceTypes(data.data);
+      } else {
+        console.error('Failed to fetch resource types:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching resource types:', error);
     }
   };
 
@@ -379,6 +408,62 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Resource CRUD operations
+  const handleUpdateResource = async (resourceData: any) => {
+    try {
+      const headers: any = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      // If resourceData is FormData (has files), don't set Content-Type
+      // If it's a regular object, set Content-Type to application/json
+      if (!(resourceData instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        resourceData = JSON.stringify(resourceData);
+      }
+
+      const response = await fetch(`http://localhost:5000/api/resources/${selectedResource.resource_id}`, {
+        method: 'PUT',
+        headers,
+        body: resourceData,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchResources();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Error updating resource:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: number) => {
+    if (!confirm('Are you sure you want to delete this resource?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/resources/${resourceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchResources();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      alert('Failed to delete resource');
+    }
+  };
+
   // Modal handlers
   const openGradeModal = (mode: 'create' | 'edit', grade?: any) => {
     setGradeModalMode(mode);
@@ -392,6 +477,16 @@ const AdminDashboard: React.FC = () => {
     setShowSubjectModal(true);
   };
 
+  const openResourceViewModal = (resource: any) => {
+    setSelectedResource(resource);
+    setShowResourceViewModal(true);
+  };
+
+  const openResourceEditModal = (resource: any) => {
+    setSelectedResource(resource);
+    setShowResourceEditModal(true);
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -401,16 +496,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   const getFileIcon = (typeName: string) => {
-    switch (typeName.toLowerCase()) {
-      case 'video': return 'video';
-      case 'document': return 'document';
-      case 'presentation': return 'presentation';
-      case 'image': return 'image';
-      case 'archive': return 'archive';
-      case 'spreadsheet': return 'spreadsheet';
-      case 'audio': return 'audio';
-      default: return 'document';
-    }
+    const iconMap: { [key: string]: any } = {
+      'video': Video,
+      'document': FileText,
+      'presentation': Presentation,
+      'image': Image,
+      'archive': Archive,
+      'spreadsheet': BarChart3,
+      'audio': Music
+    };
+    
+    return iconMap[typeName.toLowerCase()] || FileText;
   };
 
   const getPreviewImage = (resource: Resource) => {
@@ -847,83 +943,81 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Resource Filters */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex flex-col gap-4">
-                {/* Search and View Toggle Row */}
-                <div className="flex flex-col md:flex-row gap-4 items-center">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        placeholder="Search resources..."
-                        value={resourceSearchTerm}
-                        onChange={(e) => setResourceSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <select
-                    value={filterResourceStatus}
-                    onChange={(e) => setFilterResourceStatus(e.target.value as any)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                  </select>
-
-                  {/* View Toggle */}
-                  <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-md transition-colors ${
-                        viewMode === 'list' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                      title="List View"
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-md transition-colors ${
-                        viewMode === 'grid' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                      title="Grid View"
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </button>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Search Bar */}
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search resources..."
+                      value={resourceSearchTerm}
+                      onChange={(e) => setResourceSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
                   </div>
                 </div>
+                
+                {/* Status Filter */}
+                <select
+                  value={filterResourceStatus}
+                  onChange={(e) => setFilterResourceStatus(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
 
-                {/* Grade and Subject Filters Row */}
-                <div className="flex flex-col md:flex-row gap-4">
-                  <select
-                    value={filterGrade}
-                    onChange={(e) => setFilterGrade(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="all">All Grades</option>
-                    {grades.map(grade => (
-                      <option key={grade.grade_id} value={grade.grade_level}>{grade.grade_level}</option>
-                    ))}
-                  </select>
+                {/* Grade Filter */}
+                <select
+                  value={filterGrade}
+                  onChange={(e) => setFilterGrade(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Grades</option>
+                  {grades.map(grade => (
+                    <option key={grade.grade_id} value={grade.grade_level}>{grade.grade_level}</option>
+                  ))}
+                </select>
 
-                  <select
-                    value={filterSubject}
-                    onChange={(e) => setFilterSubject(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                {/* Subject Filter */}
+                <select
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Subjects</option>
+                  {subjects.map(subject => (
+                    <option key={subject.subject_id} value={subject.subject_name}>{subject.subject_name}</option>
+                  ))}
+                </select>
+
+                {/* View Toggle */}
+                <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="List View"
                   >
-                    <option value="all">All Subjects</option>
-                    {subjects.map(subject => (
-                      <option key={subject.subject_id} value={subject.subject_name}>{subject.subject_name}</option>
-                    ))}
-                  </select>
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'grid' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="Grid View"
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -956,8 +1050,22 @@ const AdminDashboard: React.FC = () => {
                           <tr key={resource.resource_id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-blue-600" />
+                                                                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                                {resource.preview_image ? (
+                                  <img
+                                    src={getPreviewImage(resource)}
+                                    alt={resource.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : null}
+                                {!resource.preview_image && (() => {
+                                  const IconComponent = getFileIcon(resource.type_name);
+                                  return <IconComponent className="w-5 h-5 text-gray-500" />;
+                                })()}
                               </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900">{resource.title}</div>
@@ -1006,13 +1114,25 @@ const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex items-center justify-end space-x-2">
-                                <button className="text-blue-600 hover:text-blue-900" title="View">
+                                <button 
+                                  onClick={() => openResourceViewModal(resource)}
+                                  className="text-blue-600 hover:text-blue-900" 
+                                  title="View"
+                                >
                                   <Eye className="w-4 h-4" />
                                 </button>
-                                <button className="text-green-600 hover:text-green-900" title="Edit">
+                                <button 
+                                  onClick={() => openResourceEditModal(resource)}
+                                  className="text-green-600 hover:text-green-900" 
+                                  title="Edit"
+                                >
                                   <Edit className="w-4 h-4" />
                                 </button>
-                                <button className="text-red-600 hover:text-red-900" title="Delete">
+                                <button 
+                                  onClick={() => handleDeleteResource(resource.resource_id)}
+                                  className="text-red-600 hover:text-red-900" 
+                                  title="Delete"
+                                >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
@@ -1055,7 +1175,10 @@ const AdminDashboard: React.FC = () => {
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center">
                                 <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-2">
-                                  <FileText className="w-4 h-4 text-blue-600" />
+                                  {(() => {
+                                    const IconComponent = getFileIcon(resource.type_name);
+                                    return <IconComponent className="w-4 h-4 text-blue-600" />;
+                                  })()}
                                 </div>
                                 <span className="text-xs text-gray-500">{resource.type_name}</span>
                               </div>
@@ -1087,13 +1210,25 @@ const AdminDashboard: React.FC = () => {
                                 </span>
                               </div>
                               <div className="flex items-center space-x-1">
-                                <button className="text-blue-600 hover:text-blue-900 p-1" title="View">
+                                <button 
+                                  onClick={() => openResourceViewModal(resource)}
+                                  className="text-blue-600 hover:text-blue-900 p-1" 
+                                  title="View"
+                                >
                                   <Eye className="w-3 h-3" />
                                 </button>
-                                <button className="text-green-600 hover:text-green-900 p-1" title="Edit">
+                                <button 
+                                  onClick={() => openResourceEditModal(resource)}
+                                  className="text-green-600 hover:text-green-900 p-1" 
+                                  title="Edit"
+                                >
                                   <Edit className="w-3 h-3" />
                                 </button>
-                                <button className="text-red-600 hover:text-red-900 p-1" title="Delete">
+                                <button 
+                                  onClick={() => handleDeleteResource(resource.resource_id)}
+                                  className="text-red-600 hover:text-red-900 p-1" 
+                                  title="Delete"
+                                >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
                               </div>
@@ -1255,6 +1390,24 @@ const AdminDashboard: React.FC = () => {
         onSubmit={subjectModalMode === 'create' ? handleCreateSubject : handleUpdateSubject}
         subject={selectedSubject}
         mode={subjectModalMode}
+      />
+
+      {/* Resource View Modal */}
+      <ResourceViewModal
+        isOpen={showResourceViewModal}
+        onClose={() => setShowResourceViewModal(false)}
+        resource={selectedResource}
+      />
+
+      {/* Resource Edit Modal */}
+      <ResourceEditModal
+        isOpen={showResourceEditModal}
+        onClose={() => setShowResourceEditModal(false)}
+        onSubmit={handleUpdateResource}
+        resource={selectedResource}
+        grades={grades}
+        subjects={subjects}
+        resourceTypes={resourceTypes}
       />
     </div>
   );

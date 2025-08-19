@@ -403,7 +403,7 @@ const updateResource = async (req, res) => {
 
     // Check if resource exists and user has permission
     const [resources] = await pool.execute(
-      'SELECT created_by FROM resources WHERE resource_id = ?',
+      'SELECT created_by, file_path, preview_image FROM resources WHERE resource_id = ?',
       [id]
     );
 
@@ -419,6 +419,29 @@ const updateResource = async (req, res) => {
         success: false,
         message: 'You can only update your own resources'
       });
+    }
+
+    const currentResource = resources[0];
+
+    // Handle file uploads if present
+    let newFilePath = currentResource.file_path;
+    let newFileName = null;
+    let newFileSize = null;
+    let newFileExtension = null;
+    let newPreviewImagePath = currentResource.preview_image;
+
+    // Handle main file upload
+    if (req.files && req.files.file && req.files.file[0]) {
+      const mainFile = req.files.file[0];
+      newFilePath = mainFile.path;
+      newFileName = mainFile.originalname;
+      newFileSize = mainFile.size;
+      newFileExtension = path.extname(newFileName).substring(1);
+    }
+
+    // Handle preview image upload
+    if (req.files && req.files.preview_image && req.files.preview_image[0]) {
+      newPreviewImagePath = req.files.preview_image[0].path;
     }
 
     // Update resource
@@ -448,6 +471,17 @@ const updateResource = async (req, res) => {
     if (status) {
       updateFields.push('status = ?');
       updateParams.push(status);
+    }
+
+    // Add file-related fields if files were uploaded
+    if (newFileName) {
+      updateFields.push('file_path = ?, file_name = ?, file_size = ?, file_extension = ?');
+      updateParams.push(newFilePath, newFileName, newFileSize, newFileExtension);
+    }
+
+    if (newPreviewImagePath !== currentResource.preview_image) {
+      updateFields.push('preview_image = ?');
+      updateParams.push(newPreviewImagePath);
     }
 
     if (updateFields.length > 0) {

@@ -20,7 +20,7 @@ router.get('/:id/download', optionalAuth, validateResourceId, resourceController
 
 // Protected routes
 router.post('/', verifyToken, requireSchoolOrAdmin, uploadMultiple, handleUploadError, validateResourceCreation, resourceController.createResource);
-router.put('/:id', verifyToken, requireSchoolOrAdmin, validateResourceId, validateResourceUpdate, resourceController.updateResource);
+router.put('/:id', verifyToken, requireSchoolOrAdmin, uploadMultiple, handleUploadError, validateResourceId, validateResourceUpdate, resourceController.updateResource);
 router.delete('/:id', verifyToken, requireSchoolOrAdmin, validateResourceId, resourceController.deleteResource);
 router.post('/:id/like', verifyToken, validateResourceId, resourceController.toggleLike);
 router.get('/user/my-resources', verifyToken, validatePagination, resourceController.getUserResources);
