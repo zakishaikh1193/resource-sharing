@@ -1,0 +1,684 @@
+import React, { useState, useEffect } from 'react';
+import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+
+interface AddResourceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (resource: any) => void;
+  initialGrade?: number;
+}
+
+interface Grade {
+  grade_id: number;
+  grade_level: string;
+  grade_number: number;
+}
+
+interface Subject {
+  subject_id: number;
+  subject_name: string;
+  color: string;
+}
+
+interface ResourceType {
+  type_id: number;
+  type_name: string;
+  icon: string;
+  allowed_extensions: string;
+}
+
+interface Tag {
+  tag_id: number;
+  tag_name: string;
+  color: string;
+}
+
+const typeIcons = {
+  Document: FileText,
+  Presentation: Presentation,
+  Video: Video,
+  Image: Activity,
+  Archive: ClipboardCheck,
+  Spreadsheet: FileText,
+  Audio: Activity
+};
+
+export const AddResourceModal: React.FC<AddResourceModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  initialGrade = 1
+}) => {
+  const { token } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type_id: 1,
+    subject_id: 1,
+    grade_id: initialGrade,
+    tags: [] as number[],
+    status: 'draft'
+  });
+
+  // File upload
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<File | null>(null);
+  const [fileError, setFileError] = useState('');
+  const [previewImageError, setPreviewImageError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // API data
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [resourceTypes, setResourceTypes] = useState<ResourceType[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  // Load metadata on component mount
+  useEffect(() => {
+    if (isOpen) {
+      loadMetadata();
+    }
+  }, [isOpen]);
+
+  const loadMetadata = async () => {
+    try {
+      // Load grades
+      const gradesResponse = await fetch('http://localhost:5000/api/meta/grades');
+      const gradesData = await gradesResponse.json();
+      if (gradesData.success) {
+        setGrades(gradesData.data);
+      }
+
+      // Load subjects
+      const subjectsResponse = await fetch('http://localhost:5000/api/meta/subjects');
+      const subjectsData = await subjectsResponse.json();
+      if (subjectsData.success) {
+        setSubjects(subjectsData.data);
+      }
+
+      // Load resource types
+      const typesResponse = await fetch('http://localhost:5000/api/meta/resource-types');
+      const typesData = await typesResponse.json();
+      if (typesData.success) {
+        setResourceTypes(typesData.data);
+      }
+
+      // Load tags
+      const tagsResponse = await fetch('http://localhost:5000/api/meta/tags');
+      const tagsData = await tagsResponse.json();
+      if (tagsData.success) {
+        setTags(tagsData.data);
+        setAvailableTags(tagsData.data.map((tag: Tag) => tag.tag_name));
+      }
+    } catch (error) {
+      console.error('Error loading metadata:', error);
+      setError('Failed to load form data. Please refresh and try again.');
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024 * 1024) {
+        setFileError('File size must be less than 1000MB');
+        return;
+      }
+
+      // Validate file extension
+      const selectedType = resourceTypes.find(t => t.type_id === formData.type_id);
+      if (selectedType) {
+        const allowedExtensions = selectedType.allowed_extensions.split(',');
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        
+        if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+          setFileError(`File type not allowed. Allowed types: ${allowedExtensions.join(', ')}`);
+          return;
+        }
+      }
+
+      setSelectedFile(file);
+      setFileError('');
+    }
+  };
+
+  const handlePreviewImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (5MB limit for preview images)
+      if (file.size > 5 * 1024 * 1024) {
+        setPreviewImageError('Preview image size must be less than 5MB');
+        setPreviewImage(null);
+        return;
+      }
+
+      // Validate file extension (images only)
+      const allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (!fileExtension || !allowedImageExtensions.includes(fileExtension)) {
+        setPreviewImageError(`Preview image must be: ${allowedImageExtensions.join(', ')}`);
+        setPreviewImage(null);
+        return;
+      }
+
+      setPreviewImage(file);
+      setPreviewImageError('');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.files = e.dataTransfer.files;
+      input.onchange = (event) => handleFileSelect(event as any);
+      input.click();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Prevent double submission
+    if (isLoading) {
+      return;
+    }
+    
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+    setUploadProgress(0);
+
+    try {
+      // Validate required fields
+      if (!formData.title || !formData.description || !selectedFile) {
+        setError('Please fill in all required fields and upload a file.');
+        setIsLoading(false);
+        return;
+      }
+      if (fileError) { // Check if there's an existing file validation error
+        setIsLoading(false);
+        return;
+      }
+
+      // Create FormData for file upload
+      const submitData = new FormData();
+      submitData.append('title', formData.title);
+      submitData.append('description', formData.description);
+      submitData.append('type_id', formData.type_id.toString());
+      submitData.append('subject_id', formData.subject_id.toString());
+      submitData.append('grade_id', formData.grade_id.toString());
+      submitData.append('status', formData.status);
+      
+      if (formData.tags.length > 0) {
+        formData.tags.forEach(tagId => {
+          submitData.append('tags[]', tagId.toString());
+        });
+      }
+
+      if (selectedFile) {
+        submitData.append('file', selectedFile);
+      }
+
+      if (previewImage) {
+        submitData.append('preview_image', previewImage);
+      }
+
+      // Use XMLHttpRequest for real progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      // Set timeout to 10 minutes for large files
+      xhr.timeout = 600000;
+      
+      return new Promise((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(progress);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 201) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (data.success) {
+                setSuccess('Resource created successfully!');
+                onSubmit(data.data);
+                
+                // Reset form
+                setFormData({
+                  title: '',
+                  description: '',
+                  type_id: 1,
+                  subject_id: 1,
+                  grade_id: initialGrade,
+                  tags: [],
+                  status: 'draft'
+                });
+                setSelectedFile(null);
+                setPreviewImage(null);
+                setFileError('');
+                setPreviewImageError('');
+                
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                  onClose();
+                  setSuccess('');
+                }, 2000);
+              } else {
+                setError(data.message || 'Failed to create resource');
+              }
+            } catch (error) {
+              setError('Invalid response from server');
+            }
+          } else {
+            setError(`Upload failed: ${xhr.status} ${xhr.statusText}`);
+          }
+          setIsLoading(false);
+          resolve(null);
+        });
+
+        xhr.addEventListener('error', () => {
+          setError('Network error. Please check your connection and try again.');
+          setIsLoading(false);
+          reject(new Error('Network error'));
+        });
+
+        xhr.addEventListener('timeout', () => {
+          setError('Upload timeout. File may be too large or connection too slow.');
+          setIsLoading(false);
+          reject(new Error('Upload timeout'));
+        });
+
+        xhr.open('POST', 'http://localhost:5000/api/resources');
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.send(submitData);
+      });
+
+    } catch (error) {
+      console.error('Error creating resource:', error);
+      setError('Network error. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isLoading) {
+      setFormData({
+        title: '',
+        description: '',
+        type_id: 1,
+        subject_id: 1,
+        grade_id: initialGrade,
+        tags: [],
+        status: 'draft'
+      });
+      setSelectedFile(null);
+      setFileError('');
+      setError('');
+      setSuccess('');
+      onClose();
+    }
+  };
+
+  const toggleTag = (tagId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tagId)
+        ? prev.tags.filter(id => id !== tagId)
+        : [...prev.tags, tagId]
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Add New Resource</h2>
+          <button
+            onClick={handleClose}
+            disabled={isLoading}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <X size={20} className="text-gray-600" />
+          </button>
+        </div>
+
+        {/* Success Message */}
+        {success && (
+          <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <div className="ml-3">
+                <p className="text-sm text-green-800">{success}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Resource Title *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              placeholder="Enter a descriptive title..."
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              required
+              rows={4}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+              placeholder="Describe your resource and how it can be used..."
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Resource Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Resource Type *
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {resourceTypes.map((type) => {
+                const Icon = typeIcons[type.type_name as keyof typeof typeIcons] || FileText;
+                return (
+                  <button
+                    key={type.type_id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type_id: type.type_id })}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      formData.type_id === type.type_id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    disabled={isLoading}
+                  >
+                    <Icon size={20} className="mx-auto mb-1 text-blue-600" />
+                    <span className="text-xs font-medium">{type.type_name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Subject and Grade Level */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subject *
+              </label>
+              <select
+                required
+                value={formData.subject_id}
+                onChange={(e) => setFormData({ ...formData, subject_id: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                disabled={isLoading}
+              >
+                {subjects.map(subject => (
+                  <option key={subject.subject_id} value={subject.subject_id}>
+                    {subject.subject_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Grade Level *
+              </label>
+              <select
+                required
+                value={formData.grade_id}
+                onChange={(e) => setFormData({ ...formData, grade_id: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                disabled={isLoading}
+              >
+                {grades.map(grade => (
+                  <option key={grade.grade_id} value={grade.grade_id}>
+                    {grade.grade_level}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Technology Tags
+            </label>
+            
+            {/* Available Tags */}
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-2">Available Tags:</p>
+              <div className="flex flex-wrap gap-2">
+                {tags.slice(0, 15).map((tag) => (
+                  <button
+                    key={tag.tag_id}
+                    type="button"
+                    onClick={() => toggleTag(tag.tag_id)}
+                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                      formData.tags.includes(tag.tag_id)
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    disabled={isLoading}
+                  >
+                    {tag.tag_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Selected Tags */}
+            {formData.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tagId) => {
+                  const tag = tags.find(t => t.tag_id === tagId);
+                  return tag ? (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                    >
+                      {tag.tag_name}
+                      <button
+                        type="button"
+                        onClick={() => toggleTag(tagId)}
+                        className="hover:text-blue-600"
+                        disabled={isLoading}
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upload File *
+            </label>
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+            >
+              <input
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-upload"
+                disabled={isLoading}
+              />
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <Upload size={40} className="mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 mb-1">Click to upload or drag and drop</p>
+                <p className="text-xs text-gray-500">
+                  {selectedFile ? selectedFile.name : 'PDF, DOC, PPT, Video, Image files (max 100MB)'}
+                </p>
+              </label>
+            </div>
+            {fileError && (
+              <p className="text-sm text-red-600 mt-2">{fileError}</p>
+            )}
+            {selectedFile && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✓ {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Preview Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Preview Image (Optional)
+            </label>
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+            >
+              <input
+                type="file"
+                onChange={handlePreviewImageSelect}
+                className="hidden"
+                id="preview-image-upload"
+                accept="image/*"
+                disabled={isLoading}
+              />
+              <label htmlFor="preview-image-upload" className="cursor-pointer">
+                <Upload size={40} className="mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 mb-1">Click to upload preview image</p>
+                <p className="text-xs text-gray-500">
+                  {previewImage ? previewImage.name : 'JPG, PNG, GIF, WebP files (max 5MB)'}
+                </p>
+              </label>
+            </div>
+            {previewImageError && (
+              <p className="text-sm text-red-600 mt-2">{previewImageError}</p>
+            )}
+            {previewImage && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✓ {previewImage.name} ({(previewImage.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              disabled={isLoading}
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !selectedFile}
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center space-x-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <span>Create Resource</span>
+              )}
+            </button>
+          </div>
+
+          {/* Upload Progress */}
+          {isLoading && selectedFile && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-800">Uploading {selectedFile.name}</span>
+                <span className="text-sm text-blue-600">{uploadProgress}% • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                {uploadProgress === 0 && "Starting upload..."}
+                {uploadProgress > 0 && uploadProgress < 100 && "Uploading file to server..."}
+                {uploadProgress === 100 && "Processing file..."}
+              </p>
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
