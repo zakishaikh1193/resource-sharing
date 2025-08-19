@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, Eye, Calendar, User, FileText, Video, Image, Archive, Music, Presentation, BarChart3 } from 'lucide-react';
+import { getFileUrl } from '../config/api';
 
 interface Resource {
   resource_id: number;
@@ -49,7 +50,7 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
 
   const getPreviewImage = (resource: Resource) => {
     if (resource.preview_image) {
-      return `http://localhost:5000/${resource.preview_image}`;
+      return getFileUrl(resource.preview_image);
     }
     return '/logo.png';
   };

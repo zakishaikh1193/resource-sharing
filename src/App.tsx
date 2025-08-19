@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from './config/api';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Header } from './components/Header';
 import { GradeColumnComponent } from './components/GradeColumn';
@@ -25,7 +26,7 @@ const AppContent: React.FC = () => {
 
   const fetchResources = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/resources?status=published&limit=1000', {
+      const response = await fetch(`${API_ENDPOINTS.RESOURCES}?status=published&limit=1000`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

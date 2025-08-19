@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -90,28 +91,28 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const loadMetadata = async () => {
     try {
       // Load grades
-      const gradesResponse = await fetch('http://localhost:5000/api/meta/grades');
+      const gradesResponse = await fetch(API_ENDPOINTS.GRADES);
       const gradesData = await gradesResponse.json();
       if (gradesData.success) {
         setGrades(gradesData.data);
       }
 
       // Load subjects
-      const subjectsResponse = await fetch('http://localhost:5000/api/meta/subjects');
+      const subjectsResponse = await fetch(API_ENDPOINTS.SUBJECTS);
       const subjectsData = await subjectsResponse.json();
       if (subjectsData.success) {
         setSubjects(subjectsData.data);
       }
 
       // Load resource types
-      const typesResponse = await fetch('http://localhost:5000/api/meta/resource-types');
+      const typesResponse = await fetch(API_ENDPOINTS.RESOURCE_TYPES);
       const typesData = await typesResponse.json();
       if (typesData.success) {
         setResourceTypes(typesData.data);
       }
 
       // Load tags
-      const tagsResponse = await fetch('http://localhost:5000/api/meta/tags');
+      const tagsResponse = await fetch(API_ENDPOINTS.TAGS);
       const tagsData = await tagsResponse.json();
       if (tagsData.success) {
         setTags(tagsData.data);
@@ -305,7 +306,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           reject(new Error('Upload timeout'));
         });
 
-        xhr.open('POST', 'http://localhost:5000/api/resources');
+        xhr.open('POST', API_ENDPOINTS.UPLOAD_RESOURCE);
         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.send(submitData);
       });

@@ -7,6 +7,7 @@ import GradeModal from './GradeModal';
 import SubjectModal from './SubjectModal';
 import ResourceViewModal from './ResourceViewModal';
 import ResourceEditModal from './ResourceEditModal';
+import { API_ENDPOINTS, getFileUrl } from '../config/api';
 
 interface User {
   user_id: number;
@@ -83,7 +84,7 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
+      const response = await fetch(API_ENDPOINTS.USERS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/grades', {
+      const response = await fetch(API_ENDPOINTS.GRADES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -129,7 +130,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/subjects', {
+      const response = await fetch(API_ENDPOINTS.SUBJECTS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -151,7 +152,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/resource-types', {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_TYPES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -174,7 +175,7 @@ const AdminDashboard: React.FC = () => {
     
     setIsLoadingResources(true);
     try {
-      const response = await fetch('http://localhost:5000/api/resources/all?limit=1000', {
+      const response = await fetch(`${API_ENDPOINTS.RESOURCES_ALL}?limit=1000`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -237,7 +238,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleCreateSchool = async (schoolData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/schools', {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/schools`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -269,7 +270,7 @@ const AdminDashboard: React.FC = () => {
   // Grade CRUD operations
   const handleCreateGrade = async (gradeData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/meta/grades', {
+      const response = await fetch(API_ENDPOINTS.GRADES, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -292,7 +293,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleUpdateGrade = async (gradeData: any) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/grades/${selectedGrade.grade_id}`, {
+      const response = await fetch(`${API_ENDPOINTS.GRADES}/${selectedGrade.grade_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -317,7 +318,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this grade?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/grades/${gradeId}`, {
+      const response = await fetch(`${API_ENDPOINTS.GRADES}/${gradeId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -340,7 +341,7 @@ const AdminDashboard: React.FC = () => {
   // Subject CRUD operations
   const handleCreateSubject = async (subjectData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/meta/subjects', {
+      const response = await fetch(API_ENDPOINTS.SUBJECTS, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -363,7 +364,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleUpdateSubject = async (subjectData: any) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/subjects/${selectedSubject.subject_id}`, {
+      const response = await fetch(`${API_ENDPOINTS.SUBJECTS}/${selectedSubject.subject_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -388,7 +389,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this subject?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/subjects/${subjectId}`, {
+      const response = await fetch(`${API_ENDPOINTS.SUBJECTS}/${subjectId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -422,7 +423,7 @@ const AdminDashboard: React.FC = () => {
         resourceData = JSON.stringify(resourceData);
       }
 
-      const response = await fetch(`http://localhost:5000/api/resources/${selectedResource.resource_id}`, {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_BY_ID(selectedResource.resource_id), {
         method: 'PUT',
         headers,
         body: resourceData,
@@ -444,7 +445,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this resource?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/resources/${resourceId}`, {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_BY_ID(resourceId), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -511,7 +512,7 @@ const AdminDashboard: React.FC = () => {
 
   const getPreviewImage = (resource: Resource) => {
     if (resource.preview_image) {
-      return `http://localhost:5000/${resource.preview_image}`;
+      return getFileUrl(resource.preview_image);
     }
     return '/logo.png'; // Default logo
   };
