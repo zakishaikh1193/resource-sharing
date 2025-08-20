@@ -5,7 +5,6 @@ import { Header } from './components/Header';
 import { GradeColumnComponent } from './components/GradeColumn';
 import { GradeColumn, Resource, ViewMode } from './types';
 import ProtectedRoute from './components/ProtectedRoute';
-import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
 
 // Main App Content (wrapped with authentication)

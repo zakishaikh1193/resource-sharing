@@ -421,7 +421,7 @@ const getResourceById = async (req, res) => {
 const updateResource = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, subject_id, grade_id, status, tags } = req.body;
+    const { title, description, type_id, subject_id, grade_id, status, tags } = req.body;
 
     // Check if resource exists and user has permission
     const [resources] = await pool.execute(
@@ -478,6 +478,11 @@ const updateResource = async (req, res) => {
     if (description !== undefined) {
       updateFields.push('description = ?');
       updateParams.push(description);
+    }
+
+    if (type_id) {
+      updateFields.push('type_id = ?');
+      updateParams.push(type_id);
     }
 
     if (subject_id) {

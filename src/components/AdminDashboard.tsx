@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, LogOut } from 'lucide-react';
+import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
@@ -216,6 +216,7 @@ const AdminDashboard: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
+        console.log('Fetched resources with tags:', data.data.resources);
         setResources(data.data.resources || []);
       } else {
         console.error('Failed to fetch resources:', data.message);
@@ -597,6 +598,8 @@ const AdminDashboard: React.FC = () => {
   };
 
   const openResourceEditModal = (resource: any) => {
+    console.log('Opening edit modal for resource:', resource);
+    console.log('Resource tags:', resource.tags);
     setSelectedResource(resource);
     setShowResourceEditModal(true);
   };
