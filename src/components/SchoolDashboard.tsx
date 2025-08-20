@@ -365,33 +365,33 @@ const SchoolDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-20 h-20 flex items-center justify-center">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center">
                 <img src="/logo.png" alt="Byline Learning Solutions" className="w-full h-full object-contain" />
               </div>
-              <div>
-                <h1 className="text-md md:text-xl font-bold text-gray-900">Byline Learning Solutions</h1>
-                <p className="text-sm text-gray-600">Byline Resource Sharing</p>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-md lg:text-xl font-bold text-gray-900 truncate">Byline Learning Solutions</h1>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Byline Resource Sharing</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
                 <School className="w-4 h-4" />
-                <span>{user?.organization || 'School'}</span>
+                <span className="truncate">{user?.organization || 'School'}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                   {user?.name?.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <button
                   onClick={logout}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
+                  <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Logout</span>
                 </button>
               </div>
             </div>
@@ -399,122 +399,128 @@ const SchoolDashboard: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {user?.name}!
           </h2>
+          <p className="text-sm sm:text-base text-gray-600">
+            Discover and download educational resources shared by the admin.
+          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Available Resources</p>
-                <p className="text-3xl font-bold text-gray-900">{resources.length}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Available Resources</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{resources.length}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Subjects</p>
-                <p className="text-3xl font-bold text-gray-900">{availableSubjects.length}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Subjects</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{availableSubjects.length}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-green-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Grade Levels</p>
-                <p className="text-3xl font-bold text-gray-900">{availableGrades.length}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Grade Levels</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{availableGrades.length}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <User className="w-6 h-6 text-purple-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col space-y-4">
             {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search resources by title, description, subject, author, or tags..."
+                placeholder="Search resources by title, description, subject, or tags..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center space-x-2">
+            {/* Controls Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* View Mode Toggle */}
+              <div className="flex items-center justify-center sm:justify-start space-x-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'grid' 
+                      ? 'bg-blue-100 text-blue-600' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Grid3X3 className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'list' 
+                      ? 'bg-blue-100 text-blue-600' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <List className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              {/* Filter Toggle */}
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-blue-100 text-blue-600' 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base ${
+                  showFilters || Object.values(filters).some(f => f.length > 0)
+                    ? 'bg-blue-100 text-blue-600'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <Grid3X3 className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <List className="w-5 h-5" />
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Filters</span>
+                <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
             </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
-                showFilters || Object.values(filters).some(f => f.length > 0)
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Filter className="w-5 h-5" />
-              <span>Filters</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
           </div>
 
           {/* Active Filters */}
           {(Object.values(filters).some(f => f.length > 0) || searchTerm) && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700">Active Filters:</span>
                 <button
                   onClick={clearAllFilters}
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-700"
                 >
                   Clear All
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {searchTerm && (
-                  <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                  <span className="inline-flex items-center px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 text-xs sm:text-sm rounded-full">
                     Search: "{searchTerm}"
                     <button
                       onClick={() => setSearchTerm('')}
@@ -524,33 +530,33 @@ const SchoolDashboard: React.FC = () => {
                     </button>
                   </span>
                 )}
-                                 {Object.entries(filters).map(([category, values]) =>
-                   values.map((value: number) => {
-                     let displayName = '';
-                     if (category === 'subjects') {
-                       displayName = availableSubjects.find(s => s.subject_id === value)?.subject_name || '';
-                     } else if (category === 'grades') {
-                       displayName = availableGrades.find(g => g.grade_id === value)?.grade_level || '';
-                                          } else if (category === 'types') {
-                       displayName = availableTypes.find(t => t.type_id === value)?.type_name || '';
-                     }
-                     
-                     return (
-                       <span
-                         key={`${category}-${value}`}
-                         className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full"
-                       >
-                         {category}: {displayName}
-                         <button
-                           onClick={() => toggleFilter(category as keyof FilterState, value)}
-                           className="ml-2 hover:text-gray-900"
-                         >
-                           <X className="w-3 h-3" />
-                         </button>
-                       </span>
-                     );
-                   })
-                 )}
+                {Object.entries(filters).map(([category, values]) =>
+                  values.map((value: number) => {
+                    let displayName = '';
+                    if (category === 'subjects') {
+                      displayName = availableSubjects.find(s => s.subject_id === value)?.subject_name || '';
+                    } else if (category === 'grades') {
+                      displayName = availableGrades.find(g => g.grade_id === value)?.grade_level || '';
+                    } else if (category === 'types') {
+                      displayName = availableTypes.find(t => t.type_id === value)?.type_name || '';
+                    }
+                    
+                    return (
+                      <span
+                        key={`${category}-${value}`}
+                        className="inline-flex items-center px-2 sm:px-3 py-1 bg-gray-100 text-gray-800 text-xs sm:text-sm rounded-full"
+                      >
+                        {category}: {displayName}
+                        <button
+                          onClick={() => toggleFilter(category as keyof FilterState, value)}
+                          className="ml-2 hover:text-gray-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -558,7 +564,7 @@ const SchoolDashboard: React.FC = () => {
           {/* Filter Options */}
           {showFilters && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Subjects Filter */}
                 <MultiSelect
                   options={availableSubjects.map(s => ({ id: s.subject_id, name: s.subject_name }))}
@@ -591,22 +597,22 @@ const SchoolDashboard: React.FC = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
+        <div className="mb-4 sm:mb-6">
+          <p className="text-sm sm:text-base text-gray-600">
             Showing {filteredResources.length} of {resources.length} resources
           </p>
         </div>
 
         {/* Resources Grid/List */}
         {filteredResources.length > 0 ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6' : 'space-y-4'}>
                          {filteredResources.map((resource) => {
                const typeName = availableTypes.find(t => t.type_id === resource.type_id)?.type_name || 'Unknown';
                const IconComponent = getFileIcon(typeName);
               
               return viewMode === 'grid' ? (
                                  // Grid View
-                 <div key={resource.resource_id} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1">
+                 <div key={resource.resource_id} className="group bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1">
                    {/* Preview Image */}
                    <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
                      <img
@@ -618,7 +624,7 @@ const SchoolDashboard: React.FC = () => {
                          target.style.display = 'none';
                          target.parentElement!.innerHTML = `
                            <div class="w-full h-full flex items-center justify-center">
-                             <div class="w-20 h-20 text-gray-300">
+                             <div class="w-16 h-16 sm:w-20 sm:h-20 text-gray-300">
                                <svg fill="currentColor" viewBox="0 0 24 24">
                                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                                </svg>
@@ -629,13 +635,13 @@ const SchoolDashboard: React.FC = () => {
                      />
                      {/* Overlay with file type icon */}
                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                     <div className="absolute top-4 left-4">
-                       <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
-                         <IconComponent className="w-5 h-5 text-gray-700" />
+                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
+                       <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 backdrop-blur-sm rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                         <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                        </div>
                      </div>
                      {/* File size badge */}
-                     <div className="absolute top-4 right-4">
+                     <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
                        <div className="px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-lg">
                          {formatFileSize(resource.file_size)}
                        </div>
@@ -643,24 +649,24 @@ const SchoolDashboard: React.FC = () => {
                    </div>
 
                    {/* Content */}
-                   <div className="p-6">
+                   <div className="p-4 sm:p-6">
                      {/* Title and Description */}
-                     <div className="mb-4">
-                       <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                     <div className="mb-3 sm:mb-4">
+                       <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                          {resource.title}
                        </h3>
-                       <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                       <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed">
                          {resource.description}
                        </p>
                      </div>
 
                      {/* Metadata Grid */}
-                     <div className="grid grid-cols-2 gap-3 mb-4">
+                     <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
                        <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                          <div className="flex-1 min-w-0">
                            <p className="text-xs text-gray-500 font-medium">Subject</p>
-                           <p className="text-sm font-semibold text-gray-900 truncate">
+                           <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                              {availableSubjects.find(s => s.subject_id === resource.subject_id)?.subject_name || 'Not specified'}
                            </p>
                          </div>
@@ -669,7 +675,7 @@ const SchoolDashboard: React.FC = () => {
                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                          <div className="flex-1 min-w-0">
                            <p className="text-xs text-gray-500 font-medium">Grade</p>
-                           <p className="text-sm font-semibold text-gray-900 truncate">
+                           <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                              {availableGrades.find(g => g.grade_id === resource.grade_id)?.grade_level || 'Not specified'}
                            </p>
                          </div>
@@ -678,19 +684,19 @@ const SchoolDashboard: React.FC = () => {
 
                      {/* Tags */}
                      {resource.tags && resource.tags.length > 0 && (
-                       <div className="mb-4">
-                         <div className="flex flex-wrap gap-1.5">
-                           {resource.tags.slice(0, 3).map(tag => (
+                       <div className="mb-3 sm:mb-4">
+                         <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                           {resource.tags.slice(0, 2).map(tag => (
                              <span
                                key={tag.tag_id}
-                               className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100"
+                               className="px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100"
                              >
                                {tag.tag_name}
                              </span>
                            ))}
-                           {resource.tags.length > 3 && (
-                             <span className="px-2.5 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-full border border-gray-200">
-                               +{resource.tags.length - 3}
+                           {resource.tags.length > 2 && (
+                             <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-full border border-gray-200">
+                               +{resource.tags.length - 2}
                              </span>
                            )}
                          </div>
@@ -698,12 +704,12 @@ const SchoolDashboard: React.FC = () => {
                      )}
 
                      {/* Action Button */}
-                     <div className="pt-4 border-t border-gray-100">
+                     <div className="pt-3 sm:pt-4 border-t border-gray-100">
                        <button
                          onClick={() => handleViewResource(resource)}
-                         className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+                         className="w-full flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] text-sm sm:text-base"
                        >
-                         <Eye className="w-4 h-4" />
+                         <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                          <span>View Details</span>
                        </button>
                      </div>
@@ -711,11 +717,11 @@ const SchoolDashboard: React.FC = () => {
                  </div>
               ) : (
                                  // List View
-                 <div key={resource.resource_id} className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
-                   <div className="flex items-start space-x-6">
+                 <div key={resource.resource_id} className="group bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+                   <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
                      {/* Preview Image */}
-                     <div className="relative flex-shrink-0">
-                       <div className="w-32 h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                     <div className="relative flex-shrink-0 self-center sm:self-start">
+                       <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm">
                          <img
                            src={getPreviewImage(resource)}
                            alt={resource.title}
@@ -725,7 +731,7 @@ const SchoolDashboard: React.FC = () => {
                              target.style.display = 'none';
                              target.parentElement!.innerHTML = `
                                <div class="w-full h-full flex items-center justify-center">
-                                 <div class="w-12 h-12 text-gray-300">
+                                 <div class="w-8 h-8 sm:w-12 sm:h-12 text-gray-300">
                                    <svg fill="currentColor" viewBox="0 0 24 24">
                                      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                                    </svg>
@@ -736,88 +742,93 @@ const SchoolDashboard: React.FC = () => {
                          />
                        </div>
                        {/* File type icon overlay */}
-                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-lg border border-gray-100">
-                         <IconComponent className="w-4 h-4 text-gray-600" />
+                       <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center shadow-lg border border-gray-100">
+                         <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
                        </div>
                      </div>
 
                      {/* Content */}
                      <div className="flex-1 min-w-0">
                        {/* Header */}
-                       <div className="flex items-start justify-between mb-4">
+                       <div className="flex items-start justify-between mb-3 sm:mb-4">
                          <div className="flex-1 min-w-0">
-                           <h3 className="font-bold text-gray-900 text-xl mb-2 group-hover:text-blue-600 transition-colors">
+                           <h3 className="font-bold text-gray-900 text-lg sm:text-xl mb-2 group-hover:text-blue-600 transition-colors">
                              {resource.title}
                            </h3>
-                           <p className="text-gray-600 leading-relaxed line-clamp-2">
+                           <p className="text-sm sm:text-base text-gray-600 leading-relaxed line-clamp-2">
                              {resource.description}
                            </p>
                          </div>
                        </div>
 
                        {/* Metadata Grid */}
-                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                         <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg sm:rounded-xl border border-green-100">
+                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
                            <div>
                              <p className="text-xs text-green-600 font-semibold">Subject</p>
-                             <p className="text-sm font-bold text-gray-900">
+                             <p className="text-xs sm:text-sm font-bold text-gray-900">
                                {availableSubjects.find(s => s.subject_id === resource.subject_id)?.subject_name || 'Not specified'}
                              </p>
                            </div>
                          </div>
-                         <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl border border-purple-100">
-                           <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg sm:rounded-xl border border-purple-100">
+                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-purple-500 rounded-full"></div>
                            <div>
                              <p className="text-xs text-purple-600 font-semibold">Grade</p>
-                             <p className="text-sm font-bold text-gray-900">
+                             <p className="text-xs sm:text-sm font-bold text-gray-900">
                                {availableGrades.find(g => g.grade_id === resource.grade_id)?.grade_level || 'Not specified'}
                              </p>
                            </div>
                          </div>
-                         <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
-                           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg sm:rounded-xl border border-blue-100">
+                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full"></div>
                            <div>
                              <p className="text-xs text-blue-600 font-semibold">Size</p>
-                             <p className="text-sm font-bold text-gray-900">{formatFileSize(resource.file_size)}</p>
+                             <p className="text-xs sm:text-sm font-bold text-gray-900">{formatFileSize(resource.file_size)}</p>
                            </div>
                          </div>
-                         <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-100">
-                           <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg sm:rounded-xl border border-orange-100">
+                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded-full"></div>
                            <div>
                              <p className="text-xs text-orange-600 font-semibold">Added</p>
-                             <p className="text-sm font-bold text-gray-900">{formatDate(resource.created_at)}</p>
+                             <p className="text-xs sm:text-sm font-bold text-gray-900">{formatDate(resource.created_at)}</p>
                            </div>
                          </div>
                        </div>
 
                        {/* Tags */}
                        {resource.tags && resource.tags.length > 0 && (
-                         <div className="mb-6">
-                           <div className="flex flex-wrap gap-2">
-                             {resource.tags.map(tag => (
+                         <div className="mb-4 sm:mb-6">
+                           <div className="flex flex-wrap gap-1 sm:gap-2">
+                             {resource.tags.slice(0, 4).map(tag => (
                                <span
                                  key={tag.tag_id}
-                                 className="px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-sm font-medium rounded-full border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                                 className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs sm:text-sm font-medium rounded-full border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
                                >
                                  {tag.tag_name}
                                </span>
                              ))}
+                             {resource.tags.length > 4 && (
+                               <span className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-full border border-gray-200">
+                                 +{resource.tags.length - 4}
+                               </span>
+                             )}
                            </div>
                          </div>
                        )}
 
                        {/* Actions */}
-                       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                         <div className="flex items-center space-x-2 text-sm text-gray-500">
+                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 sm:pt-4 border-t border-gray-100 space-y-3 sm:space-y-0">
+                         <div className="flex items-center justify-center sm:justify-start space-x-2 text-xs sm:text-sm text-gray-500">
                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                            <span>By Admin</span>
                          </div>
                          <button
                            onClick={() => handleViewResource(resource)}
-                           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-105"
+                           className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-105 text-sm sm:text-base"
                          >
-                           <Eye className="w-4 h-4" />
+                           <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                            <span>View Details</span>
                          </button>
                        </div>
@@ -829,12 +840,12 @@ const SchoolDashboard: React.FC = () => {
           </div>
         ) : (
           // Empty State
-          <div className="text-center py-12">
-            <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl text-gray-400">🔍</span>
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <span className="text-xl sm:text-2xl text-gray-400">🔍</span>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No resources found</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4">
               {searchTerm || Object.values(filters).some(f => f.length > 0)
                 ? "Try adjusting your search terms or filters."
                 : "No resources are available yet. Check back later!"
@@ -843,7 +854,7 @@ const SchoolDashboard: React.FC = () => {
             {(searchTerm || Object.values(filters).some(f => f.length > 0)) && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 Clear All Filters
               </button>

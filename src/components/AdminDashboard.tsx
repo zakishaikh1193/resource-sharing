@@ -37,7 +37,6 @@ interface Resource {
   view_count: number;
   likes: number;
   preview_image?: string;
-  subject_color?: string;
   icon?: string;
   tags?: Array<{
     tag_id: number;
@@ -647,9 +646,14 @@ const AdminDashboard: React.FC = () => {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage schools, content, and system settings</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center">
+                <img src="/logo.png" alt="Byline Learning Solutions" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm sm:text-base text-gray-600">Manage content and schools</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">Welcome, {user?.name}</span>
@@ -817,13 +821,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-1" 
-                            style={{ backgroundColor: resource.subject_color || '#6B7280' }}
-                          ></div>
-                          <span>{resource.subject_name}</span>
-                        </div>
+                        <span>{resource.subject_name}</span>
                         <span>•</span>
                         <span>{resource.grade_level}</span>
                         <span>•</span>
@@ -1164,7 +1162,7 @@ const AdminDashboard: React.FC = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Downloads</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -1201,13 +1199,7 @@ const AdminDashboard: React.FC = () => {
                               {resource.type_name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center">
-                                <div 
-                                  className="w-3 h-3 rounded-full mr-2" 
-                                  style={{ backgroundColor: resource.subject_color || '#6B7280' }}
-                                ></div>
-                                {resource.subject_name}
-                              </div>
+                              {resource.subject_name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {resource.grade_level}
@@ -1222,14 +1214,10 @@ const AdminDashboard: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex items-center space-x-4">
-                                <span title="Downloads">
-                                  <Download className="w-4 h-4 inline mr-1" />
-                                  {resource.download_count || 0}
-                                </span>
-                                <span title="Views">
-                                  <Eye className="w-4 h-4 inline mr-1" />
-                                  {resource.view_count || 0}
+                              <div className="flex items-center justify-center">
+                                <span title="Downloads" className="flex items-center space-x-1">
+                                  <Download className="w-4 h-4" />
+                                  <span>{resource.download_count || 0}</span>
                                 </span>
                               </div>
                             </td>
@@ -1313,26 +1301,22 @@ const AdminDashboard: React.FC = () => {
                             
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                               <div className="flex items-center">
-                                <div 
+                              <div 
                                   className="w-2 h-2 rounded-full mr-1" 
-                                  style={{ backgroundColor: resource.subject_color || '#6B7280' }}
+                                  style={{ backgroundColor: '#FF0000' }}
                                 ></div>
-                                <span>{resource.subject_name}</span>
+                                <span className='text-gray-500 text-md'>{resource.subject_name}</span>
                               </div>
                               <span>{resource.grade_level}</span>
                             </div>
                             
                             <div className="flex items-center justify-between text-xs text-gray-500">
-                              <div className="flex items-center space-x-3">
-                                <span title="Downloads">
-                                  <Download className="w-3 h-3 inline mr-1" />
-                                  {resource.download_count || 0}
-                                </span>
-                                <span title="Views">
-                                  <Eye className="w-3 h-3 inline mr-1" />
-                                  {resource.view_count || 0}
-                                </span>
-                              </div>
+                                                          <div className="flex items-center justify-center">
+                              <span title="Downloads" className="flex items-center space-x-1">
+                                <Download className="w-3 h-3" />
+                                <span>{resource.download_count || 0}</span>
+                              </span>
+                            </div>
                               <div className="flex items-center space-x-1">
                                 <button 
                                   onClick={() => openResourceViewModal(resource)}
