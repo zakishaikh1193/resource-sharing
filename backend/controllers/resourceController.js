@@ -163,18 +163,26 @@ const getResources = async (req, res) => {
       });
     }
 
-    // Add default values for likes and comments
-    const processedResources = resources.map(resource => ({
-      ...resource,
-      likes: resource.likes || 0,
-      comments: resource.comments || 0,
-      download_count: resource.download_count || 0,
-      view_count: resource.view_count || 0,
-      type_name: 'Unknown',
-      subject_name: 'Unknown',
-      grade_level: 'Unknown',
-      author_name: 'Unknown'
-    }));
+    // Get tags for each resource and remove counts
+    const resourcesWithTags = await Promise.all(
+      resources.map(async (resource) => {
+        const [tags] = await pool.execute(
+          `SELECT t.tag_id, t.tag_name 
+           FROM resource_tag_relations rtr
+           JOIN resource_tags t ON rtr.tag_id = t.tag_id
+           WHERE rtr.resource_id = ?`,
+          [resource.resource_id]
+        );
+        
+        // Remove download_count and view_count, keep other fields
+        const { download_count, view_count, ...resourceWithoutCounts } = resource;
+        
+        return {
+          ...resourceWithoutCounts,
+          tags: tags
+        };
+      })
+    );
 
     // Get total count
     const [countResult] = await pool.execute(
@@ -187,7 +195,7 @@ const getResources = async (req, res) => {
     res.json({
       success: true,
       data: {
-        resources: processedResources,
+        resources: resourcesWithTags,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),

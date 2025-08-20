@@ -1570,6 +1570,24 @@ const AdminDashboard: React.FC = () => {
         isOpen={showResourceViewModal}
         onClose={() => setShowResourceViewModal(false)}
         resource={selectedResource}
+        onDownload={(resource) => {
+          // Handle download for admin view
+          window.open(`${API_ENDPOINTS.RESOURCE_DOWNLOAD(resource.resource_id)}`, '_blank');
+        }}
+        getSubjectName={(subjectId) => {
+          const subject = subjects.find(s => s.subject_id === subjectId);
+          return subject ? subject.subject_name : 'Unknown';
+        }}
+        getGradeLevel={(gradeId) => {
+          const grade = grades.find(g => g.grade_id === gradeId);
+          return grade ? grade.grade_level : 'Unknown';
+        }}
+        getTypeName={(typeId) => {
+          const type = resourceTypes.find(t => t.type_id === typeId);
+          return type ? type.type_name : 'Unknown';
+        }}
+        formatFileSize={formatFileSize}
+        formatDate={(dateString) => new Date(dateString).toLocaleDateString()}
       />
 
       {/* Resource Edit Modal */}
