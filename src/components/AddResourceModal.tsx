@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
-import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2, Plus, Image } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AddResourceModalProps {
@@ -39,7 +39,7 @@ const typeIcons = {
   Document: FileText,
   Presentation: Presentation,
   Video: Video,
-  Image: Activity,
+  Image: Image,
   Archive: ClipboardCheck,
   Spreadsheet: FileText,
   Audio: Activity
@@ -80,6 +80,10 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const [resourceTypes, setResourceTypes] = useState<ResourceType[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [tagSearchTerm, setTagSearchTerm] = useState('');
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   // Load metadata on component mount
   useEffect(() => {
@@ -87,6 +91,30 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       loadMetadata();
     }
   }, [isOpen]);
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (tagInputRef.current && !tagInputRef.current.contains(target)) {
+        // Check if the click is on a suggestion button
+        const suggestionButton = (target as Element).closest('[data-tag-suggestion]');
+        if (!suggestionButton) {
+          setShowTagSuggestions(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Debug: Monitor formData.tags changes
+  useEffect(() => {
+    console.log('formData.tags changed:', formData.tags);
+  }, [formData.tags]);
 
   const loadMetadata = async () => {
     try {
@@ -275,6 +303,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 setPreviewImage(null);
                 setFileError('');
                 setPreviewImageError('');
+                setTagSearchTerm('');
+                setShowTagSuggestions(false);
                 
                 // Close modal after 2 seconds
                 setTimeout(() => {
@@ -330,7 +360,11 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         status: 'draft'
       });
       setSelectedFile(null);
+      setPreviewImage(null);
       setFileError('');
+      setPreviewImageError('');
+      setTagSearchTerm('');
+      setShowTagSuggestions(false);
       setError('');
       setSuccess('');
       onClose();
@@ -338,12 +372,105 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   };
 
   const toggleTag = (tagId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.includes(tagId)
+    console.log('Toggling tag ID:', tagId);
+    setFormData(prev => {
+      const newTags = prev.tags.includes(tagId)
         ? prev.tags.filter(id => id !== tagId)
-        : [...prev.tags, tagId]
-    }));
+        : [...prev.tags, tagId];
+      console.log('New tags array:', newTags);
+      return {
+        ...prev,
+        tags: newTags
+      };
+    });
+  };
+
+  // Filter tags based on search term
+  const filteredTags = tags.filter(tag => {
+    const matchesSearch = tagSearchTerm === '' || 
+      tag.tag_name.toLowerCase().includes(tagSearchTerm.toLowerCase());
+    const notAlreadySelected = !formData.tags.includes(tag.tag_id);
+    return matchesSearch && notAlreadySelected;
+  });
+
+  // Handle tag search input
+  const handleTagSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTagSearchTerm(value);
+    setShowTagSuggestions(true); // Always show suggestions when typing
+  };
+
+  // Handle tag selection from suggestions
+  const handleTagSelect = (tag: Tag) => {
+    console.log('Selecting tag:', tag);
+    toggleTag(tag.tag_id);
+    setTagSearchTerm('');
+    setShowTagSuggestions(false);
+    
+    // Add visual feedback
+    const button = document.querySelector(`[data-tag-id="${tag.tag_id}"]`) as HTMLElement;
+    if (button) {
+      button.style.backgroundColor = '#dbeafe';
+      setTimeout(() => {
+        button.style.backgroundColor = '';
+      }, 200);
+    }
+  };
+
+  // Handle creating a new tag
+  const handleCreateTag = async () => {
+    if (!tagSearchTerm.trim() || isCreatingTag) return;
+
+    setIsCreatingTag(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.TAGS, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tag_name: tagSearchTerm.trim(),
+          description: null
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Reload tags to get the new one
+        const tagsResponse = await fetch(API_ENDPOINTS.TAGS);
+        const tagsData = await tagsResponse.json();
+        if (tagsData.success) {
+          setTags(tagsData.data);
+          // Add the new tag to the resource
+          toggleTag(data.data.tag_id);
+        }
+        setTagSearchTerm('');
+        setShowTagSuggestions(false);
+      } else {
+        alert(data.message || 'Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      alert('Failed to create tag');
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
+  // Handle keyboard events for tag input
+  const handleTagInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredTags.length > 0) {
+        handleTagSelect(filteredTags[0]);
+      } else if (tagSearchTerm.trim()) {
+        handleCreateTag();
+      }
+    } else if (e.key === 'Escape') {
+      setShowTagSuggestions(false);
+      setTagSearchTerm('');
+    }
   };
 
   if (!isOpen) return null;
@@ -492,29 +619,78 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           {/* Tags */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Technology Tags
+              Tags
             </label>
             
-            {/* Available Tags */}
-            <div className="mb-3">
-              <p className="text-xs text-gray-500 mb-2">Available Tags:</p>
-              <div className="flex flex-wrap gap-2">
-                {tags.slice(0, 15).map((tag) => (
-                  <button
-                    key={tag.tag_id}
-                    type="button"
-                    onClick={() => toggleTag(tag.tag_id)}
-                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                      formData.tags.includes(tag.tag_id)
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+            {/* Searchable Tag Input */}
+            <div className="relative mb-3">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    ref={tagInputRef}
+                    type="text"
+                    value={tagSearchTerm}
+                    onChange={handleTagSearchChange}
+                    onKeyDown={handleTagInputKeyDown}
+                    onFocus={() => setShowTagSuggestions(true)}
+                    placeholder="Add or select a tag"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     disabled={isLoading}
-                  >
-                    {tag.tag_name}
-                  </button>
-                ))}
+                  />
+                 
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCreateTag}
+                  disabled={!tagSearchTerm.trim() || isCreatingTag || isLoading}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {isCreatingTag ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  <span>{isCreatingTag ? 'Adding...' : 'Add'}</span>
+                </button>
               </div>
+
+              {/* Tag Suggestions Dropdown */}
+              {showTagSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {filteredTags.length > 0 ? (
+                    filteredTags.map((tag) => (
+                      <button
+                        key={tag.tag_id}
+                        type="button"
+                        data-tag-suggestion="true"
+                        data-tag-id={tag.tag_id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleTagSelect(tag);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                        disabled={isLoading}
+                      >
+                       
+                        <span className="text-blue-600">{tag.tag_name}</span>
+                      </button>
+                    ))
+                  ) : tagSearchTerm.trim() ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Press Enter or click "Add" to create "{tagSearchTerm}"
+                    </div>
+                  ) : tags.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No tags available. Start typing to create a new tag.
+                    </div>
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      All tags have been selected.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             {/* Selected Tags */}

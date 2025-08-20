@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Download, Eye, Calendar, User, FileText, Video, Image, Archive, Music, Presentation, BarChart3 } from 'lucide-react';
+import { X, Download, Eye, Calendar, User, FileText, Video, Image, Archive, Music, Presentation, BarChart3, Tag } from 'lucide-react';
 import { getFileUrl } from '../config/api';
 
 interface Resource {
@@ -19,6 +19,10 @@ interface Resource {
   likes: number;
   preview_image?: string;
   subject_color?: string;
+  tags?: Array<{
+    tag_id: number;
+    tag_name: string;
+  }>;
 }
 
 interface ResourceViewModalProps {
@@ -197,6 +201,26 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Tags */}
+              {resource.tags && resource.tags.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    Tags
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {resource.tags.map((tag) => (
+                      <span
+                        key={tag.tag_id}
+                        className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                      >
+                        {tag.tag_name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex items-center gap-3 pt-4 border-t border-gray-200">

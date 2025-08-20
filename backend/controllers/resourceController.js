@@ -246,8 +246,13 @@ const getAllResources = async (req, res) => {
     }
 
     if (search) {
-      conditions.push('(r.title LIKE ? OR r.description LIKE ?)');
-      params.push(`%${search}%`, `%${search}%`);
+      conditions.push(`(r.title LIKE ? OR r.description LIKE ? OR 
+        EXISTS (
+          SELECT 1 FROM resource_tag_relations rtr 
+          JOIN resource_tags t ON rtr.tag_id = t.tag_id 
+          WHERE rtr.resource_id = r.resource_id AND t.tag_name LIKE ?
+        ))`);
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -286,6 +291,23 @@ const getAllResources = async (req, res) => {
       [...params, limitValue, offsetValue]
     );
 
+    // Get tags for each resource
+    const resourcesWithTags = await Promise.all(
+      resources.map(async (resource) => {
+        const [tags] = await pool.execute(
+          `SELECT t.tag_id, t.tag_name 
+           FROM resource_tag_relations rtr
+           JOIN resource_tags t ON rtr.tag_id = t.tag_id
+           WHERE rtr.resource_id = ?`,
+          [resource.resource_id]
+        );
+        return {
+          ...resource,
+          tags: tags
+        };
+      })
+    );
+
     // Get total count
     const [countResult] = await pool.query(
       `SELECT COUNT(*) as total FROM resources r ${whereClause}`,
@@ -295,7 +317,7 @@ const getAllResources = async (req, res) => {
     const total = countResult[0].total;
 
     // Resources already have joined data, no need to add defaults
-    const processedResources = resources;
+    const processedResources = resourcesWithTags;
 
     res.json({
       success: true,

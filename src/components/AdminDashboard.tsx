@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation } from 'lucide-react';
+import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
@@ -7,6 +7,7 @@ import GradeModal from './GradeModal';
 import SubjectModal from './SubjectModal';
 import ResourceViewModal from './ResourceViewModal';
 import ResourceEditModal from './ResourceEditModal';
+import TagModal from './TagModal';
 import { API_ENDPOINTS, getFileUrl } from '../config/api';
 
 interface User {
@@ -38,10 +39,14 @@ interface Resource {
   preview_image?: string;
   subject_color?: string;
   icon?: string;
+  tags?: Array<{
+    tag_id: number;
+    tag_name: string;
+  }>;
 }
 
 const AdminDashboard: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -66,8 +71,12 @@ const AdminDashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
   const [selectedResource, setSelectedResource] = useState<any>(null);
   const [resourceTypes, setResourceTypes] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [gradeModalMode, setGradeModalMode] = useState<'create' | 'edit'>('create');
   const [subjectModalMode, setSubjectModalMode] = useState<'create' | 'edit'>('create');
+  const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedTag, setSelectedTag] = useState<any>(null);
+  const [showTagModal, setShowTagModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata' | 'settings'>('overview');
 
   useEffect(() => {
@@ -76,6 +85,7 @@ const AdminDashboard: React.FC = () => {
     fetchGrades();
     fetchSubjects();
     fetchResourceTypes();
+    fetchTags();
   }, [token]);
 
   const fetchUsers = async () => {
@@ -170,6 +180,28 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchTags = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(API_ENDPOINTS.TAGS, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setTags(data.data);
+      } else {
+        console.error('Failed to fetch tags:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
+
   const fetchResources = async () => {
     if (!token) return;
     
@@ -207,10 +239,14 @@ const AdminDashboard: React.FC = () => {
   });
 
   const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(resourceSearchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(resourceSearchTerm.toLowerCase()) ||
-                         (resource.subject_name && resource.subject_name.toLowerCase().includes(resourceSearchTerm.toLowerCase())) ||
-                         (resource.grade_level && resource.grade_level.toLowerCase().includes(resourceSearchTerm.toLowerCase()));
+    const searchTerm = resourceSearchTerm.toLowerCase();
+    
+    // Search in title, description, subject, grade, and tags
+    const matchesSearch = resource.title.toLowerCase().includes(searchTerm) ||
+                         resource.description.toLowerCase().includes(searchTerm) ||
+                         (resource.subject_name && resource.subject_name.toLowerCase().includes(searchTerm)) ||
+                         (resource.grade_level && resource.grade_level.toLowerCase().includes(searchTerm)) ||
+                         (resource.tags && resource.tags.some(tag => tag.tag_name.toLowerCase().includes(searchTerm)));
     
     const matchesStatus = filterResourceStatus === 'all' || resource.status === filterResourceStatus;
     const matchesGrade = filterGrade === 'all' || resource.grade_level === filterGrade;
@@ -409,6 +445,77 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Tag CRUD operations
+  const handleCreateTag = async (tagData: any) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.TAGS, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tagData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      alert('Failed to create tag');
+    }
+  };
+
+  const handleUpdateTag = async (tagData: any) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TAGS}/${selectedTag.tag_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tagData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error updating tag:', error);
+      alert('Failed to update tag');
+    }
+  };
+
+  const handleDeleteTag = async (tagId: number) => {
+    if (!confirm('Are you sure you want to delete this tag?')) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TAGS}/${tagId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      alert('Failed to delete tag');
+    }
+  };
+
   // Resource CRUD operations
   const handleUpdateResource = async (resourceData: any) => {
     try {
@@ -478,6 +585,12 @@ const AdminDashboard: React.FC = () => {
     setShowSubjectModal(true);
   };
 
+  const openTagModal = (mode: 'create' | 'edit', tag?: any) => {
+    setTagModalMode(mode);
+    setSelectedTag(tag || null);
+    setShowTagModal(true);
+  };
+
   const openResourceViewModal = (resource: any) => {
     setSelectedResource(resource);
     setShowResourceViewModal(true);
@@ -540,6 +653,13 @@ const AdminDashboard: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                 {user?.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
               </div>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -553,7 +673,7 @@ const AdminDashboard: React.FC = () => {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'users', label: 'School Management', icon: Users },
               { id: 'content', label: 'Content Management', icon: BookOpen },
-              { id: 'metadata', label: 'Grades & Subjects', icon: Tag },
+              { id: 'metadata', label: 'Metadata', icon: Tag },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -1339,6 +1459,46 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+            </div>
+
+            {/* Tags Section - Separate Row */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Tags</h3>
+                <button 
+                  onClick={() => openTagModal('create')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Add Tag
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tags.map(tag => (
+                  <div key={tag.tag_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <span className="font-medium text-gray-900">{tag.tag_name}</span>
+                      {tag.description && (
+                        <p className="text-sm text-gray-500">{tag.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => openTagModal('edit', tag)}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteTag(tag.tag_id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -1391,6 +1551,15 @@ const AdminDashboard: React.FC = () => {
         onSubmit={subjectModalMode === 'create' ? handleCreateSubject : handleUpdateSubject}
         subject={selectedSubject}
         mode={subjectModalMode}
+      />
+
+      {/* Tag Modal */}
+      <TagModal
+        isOpen={showTagModal}
+        onClose={() => setShowTagModal(false)}
+        onSubmit={tagModalMode === 'create' ? handleCreateTag : handleUpdateTag}
+        tag={selectedTag}
+        mode={tagModalMode}
       />
 
       {/* Resource View Modal */}
