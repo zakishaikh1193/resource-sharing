@@ -1,216 +1,225 @@
 import React from 'react';
-import { X, Download, Eye, Calendar, User, FileText, Video, Image, Archive, Music, Presentation, BarChart3 } from 'lucide-react';
+import { X, Download, Tag, Calendar, FileText, Video, Presentation, Image, Archive, Music } from 'lucide-react';
+import { getFileUrl } from '../config/api';
 
 interface Resource {
   resource_id: number;
   title: string;
   description: string;
-  type_name: string;
-  subject_name: string;
-  grade_level: string;
+  type_id: number;
+  subject_id: number;
+  grade_id: number;
+  created_by: number;
   file_name: string;
   file_size: number;
   status: string;
   created_at: string;
-  author_name: string;
-  download_count: number;
-  view_count: number;
-  likes: number;
   preview_image?: string;
-  subject_color?: string;
+  tags?: Array<{
+    tag_id: number;
+    tag_name: string;
+  }>;
 }
 
 interface ResourceViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   resource: Resource | null;
+  onDownload: (resource: Resource) => void;
+  getSubjectName: (subjectId: number) => string;
+  getGradeLevel: (gradeId: number) => string;
+  getTypeName: (typeId: number) => string;
+  formatFileSize: (bytes: number) => string;
+  formatDate: (dateString: string) => string;
 }
 
 const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
   isOpen,
   onClose,
-  resource
+  resource,
+  onDownload,
+  getSubjectName,
+  getGradeLevel,
+  getTypeName,
+  formatFileSize,
+  formatDate
 }) => {
   if (!isOpen || !resource) return null;
 
   const getFileIcon = (typeName: string) => {
     const iconMap: { [key: string]: any } = {
-      'video': Video,
-      'document': FileText,
-      'presentation': Presentation,
-      'image': Image,
-      'archive': Archive,
-      'spreadsheet': BarChart3,
-      'audio': Music
+      'Document': FileText,
+      'Video': Video,
+      'Presentation': Presentation,
+      'Image': Image,
+      'Archive': Archive,
+      'Spreadsheet': FileText,
+      'Audio': Music
     };
-    
-    return iconMap[typeName.toLowerCase()] || FileText;
+    return iconMap[typeName] || FileText;
   };
 
   const getPreviewImage = (resource: Resource) => {
     if (resource.preview_image) {
-      return `http://localhost:5000/${resource.preview_image}`;
+      return getFileUrl(resource.preview_image);
     }
     return '/logo.png';
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const IconComponent = getFileIcon(resource.type_name);
+  const typeName = getTypeName(resource.type_id);
+  const IconComponent = getFileIcon(typeName);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Resource Details</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
+              <IconComponent className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Resource Details</h2>
+              <p className="text-gray-600">View and download educational resources</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Preview Image */}
-            <div className="lg:col-span-1">
-              <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden">
-                <img
-                  src={getPreviewImage(resource)}
-                  alt={resource.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.parentElement!.innerHTML = `
-                      <div class="w-full h-full flex items-center justify-center">
-                        <div class="w-16 h-16 text-gray-400">
-                          <svg fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                          </svg>
-                        </div>
-                      </div>
-                    `;
-                  }}
-                />
-              </div>
-            </div>
+                 <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+           <div className="p-8">
+             {/* Side-by-side layout */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+               {/* Left Side - Image */}
+               <div className="space-y-6">
+                 {/* Preview Image */}
+                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden relative shadow-lg">
+                   <img
+                     src={getPreviewImage(resource)}
+                     alt={resource.title}
+                     className="w-full h-full object-cover"
+                     onError={(e) => {
+                       const target = e.target as HTMLImageElement;
+                       target.style.display = 'none';
+                       target.parentElement!.innerHTML = `
+                         <div class="w-full h-full flex items-center justify-center">
+                           <div class="w-32 h-32 text-gray-300">
+                             <svg fill="currentColor" viewBox="0 0 24 24">
+                               <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                             </svg>
+                           </div>
+                         </div>
+                       `;
+                     }}
+                   />
+                   {/* File size badge */}
+                   <div className="absolute top-4 right-4">
+                     <div className="px-3 py-1.5 bg-black/80 backdrop-blur-sm text-white text-sm font-medium rounded-xl">
+                       {formatFileSize(resource.file_size)}
+                     </div>
+                   </div>
+                 </div>
 
-            {/* Resource Details */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Title and Type */}
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <IconComponent className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900">{resource.title}</h3>
-                </div>
-                <p className="text-gray-600">{resource.description}</p>
-              </div>
+                 {/* File Name */}
+              
+               </div>
 
-              {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Type:</span>
-                  <span className="text-sm font-medium">{resource.type_name}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: resource.subject_color || '#6B7280' }}></div>
-                  <span className="text-sm text-gray-600">Subject:</span>
-                  <span className="text-sm font-medium">{resource.subject_name}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Grade:</span>
-                  <span className="text-sm font-medium">{resource.grade_level}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">Author:</span>
-                  <span className="text-sm font-medium">{resource.author_name}</span>
-                </div>
-              </div>
+               {/* Right Side - Details */}
+               <div className="space-y-6">
+                 {/* Title and Description */}
+                 <div>
+                   <h3 className="text-2xl font-bold text-gray-900 mb-3">{resource.title}</h3>
+                   <p className="text-gray-600 leading-relaxed">
+                     {resource.description}
+                   </p>
+                 </div>
 
-              {/* File Information */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">File Information</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">File Name:</span>
-                    <p className="font-medium">{resource.file_name}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">File Size:</span>
-                    <p className="font-medium">{formatFileSize(resource.file_size)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Created:</span>
-                    <p className="font-medium">{formatDate(resource.created_at)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Status:</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      resource.status === 'published' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {resource.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                 {/* Metadata Grid */}
+                 <div className="grid grid-cols-1 gap-4">
+                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                       <span className="text-green-700 font-semibold">Subject</span>
+                     </div>
+                     <span className="text-gray-900 font-bold">{getSubjectName(resource.subject_id)}</span>
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl border border-purple-100">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                       <span className="text-purple-700 font-semibold">Grade Level</span>
+                     </div>
+                     <span className="text-gray-900 font-bold">{getGradeLevel(resource.grade_id)}</span>
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                       <span className="text-blue-700 font-semibold">Resource Type</span>
+                     </div>
+                     <span className="text-gray-900 font-bold">{typeName}</span>
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                       <span className="text-indigo-700 font-semibold">File Size</span>
+                     </div>
+                     <span className="text-gray-900 font-bold">{formatFileSize(resource.file_size)}</span>
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-100">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                       <span className="text-pink-700 font-semibold">Added</span>
+                     </div>
+                     <span className="text-gray-900 font-bold">{formatDate(resource.created_at)}</span>
+                   </div>
+                 </div>
 
-              {/* Statistics */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Statistics</h4>
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Download className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-600">Downloads:</span>
-                    <span className="font-medium">{resource.download_count}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-600">Views:</span>
-                    <span className="font-medium">{resource.view_count}</span>
-                  </div>
-                </div>
-              </div>
+                 {/* Tags */}
+                 {resource.tags && resource.tags.length > 0 && (
+                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                     <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                       <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
+                         <Tag className="w-3 h-3 text-white" />
+                       </div>
+                       Tags
+                     </h4>
+                     <div className="flex flex-wrap gap-2">
+                       {resource.tags.map((tag) => (
+                         <span
+                           key={tag.tag_id}
+                           className="inline-flex items-center px-3 py-1.5 bg-white text-blue-700 text-sm font-semibold rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow"
+                         >
+                           {tag.tag_name}
+                         </span>
+                       ))}
+                     </div>
+                   </div>
+                 )}
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  <Download className="w-4 h-4" />
-                  Download Resource
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  <Eye className="w-4 h-4" />
-                  Preview
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                 {/* Actions */}
+                 <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
+                   <button
+                     onClick={onClose}
+                     className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
+                   >
+                     Close
+                   </button>
+                   <button
+                     onClick={() => onDownload(resource)}
+                     className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                   >
+                     <Download className="w-4 h-4" />
+                     <span>Download Resource</span>
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
       </div>
     </div>
   );

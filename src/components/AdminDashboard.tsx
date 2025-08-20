@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Plus, Search, Filter, MoreVertical, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Calendar, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation } from 'lucide-react';
+import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
@@ -7,6 +7,8 @@ import GradeModal from './GradeModal';
 import SubjectModal from './SubjectModal';
 import ResourceViewModal from './ResourceViewModal';
 import ResourceEditModal from './ResourceEditModal';
+import TagModal from './TagModal';
+import { API_ENDPOINTS, getFileUrl } from '../config/api';
 
 interface User {
   user_id: number;
@@ -35,12 +37,15 @@ interface Resource {
   view_count: number;
   likes: number;
   preview_image?: string;
-  subject_color?: string;
   icon?: string;
+  tags?: Array<{
+    tag_id: number;
+    tag_name: string;
+  }>;
 }
 
 const AdminDashboard: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -65,8 +70,12 @@ const AdminDashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
   const [selectedResource, setSelectedResource] = useState<any>(null);
   const [resourceTypes, setResourceTypes] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [gradeModalMode, setGradeModalMode] = useState<'create' | 'edit'>('create');
   const [subjectModalMode, setSubjectModalMode] = useState<'create' | 'edit'>('create');
+  const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedTag, setSelectedTag] = useState<any>(null);
+  const [showTagModal, setShowTagModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata' | 'settings'>('overview');
 
   useEffect(() => {
@@ -75,6 +84,7 @@ const AdminDashboard: React.FC = () => {
     fetchGrades();
     fetchSubjects();
     fetchResourceTypes();
+    fetchTags();
   }, [token]);
 
   const fetchUsers = async () => {
@@ -83,7 +93,7 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
+      const response = await fetch(API_ENDPOINTS.USERS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -107,7 +117,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/grades', {
+      const response = await fetch(API_ENDPOINTS.GRADES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -129,7 +139,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/subjects', {
+      const response = await fetch(API_ENDPOINTS.SUBJECTS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -151,7 +161,7 @@ const AdminDashboard: React.FC = () => {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/meta/resource-types', {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_TYPES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -169,12 +179,11 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchResources = async () => {
+  const fetchTags = async () => {
     if (!token) return;
     
-    setIsLoadingResources(true);
     try {
-      const response = await fetch('http://localhost:5000/api/resources/all?limit=1000', {
+      const response = await fetch(API_ENDPOINTS.TAGS, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -183,6 +192,30 @@ const AdminDashboard: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
+        setTags(data.data);
+      } else {
+        console.error('Failed to fetch tags:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
+
+  const fetchResources = async () => {
+    if (!token) return;
+    
+    setIsLoadingResources(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.RESOURCES_ALL}?limit=1000`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('Fetched resources with tags:', data.data.resources);
         setResources(data.data.resources || []);
       } else {
         console.error('Failed to fetch resources:', data.message);
@@ -206,10 +239,14 @@ const AdminDashboard: React.FC = () => {
   });
 
   const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(resourceSearchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(resourceSearchTerm.toLowerCase()) ||
-                         (resource.subject_name && resource.subject_name.toLowerCase().includes(resourceSearchTerm.toLowerCase())) ||
-                         (resource.grade_level && resource.grade_level.toLowerCase().includes(resourceSearchTerm.toLowerCase()));
+    const searchTerm = resourceSearchTerm.toLowerCase();
+    
+    // Search in title, description, subject, grade, and tags
+    const matchesSearch = resource.title.toLowerCase().includes(searchTerm) ||
+                         resource.description.toLowerCase().includes(searchTerm) ||
+                         (resource.subject_name && resource.subject_name.toLowerCase().includes(searchTerm)) ||
+                         (resource.grade_level && resource.grade_level.toLowerCase().includes(searchTerm)) ||
+                         (resource.tags && resource.tags.some(tag => tag.tag_name.toLowerCase().includes(searchTerm)));
     
     const matchesStatus = filterResourceStatus === 'all' || resource.status === filterResourceStatus;
     const matchesGrade = filterGrade === 'all' || resource.grade_level === filterGrade;
@@ -237,7 +274,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleCreateSchool = async (schoolData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/schools', {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/schools`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -269,7 +306,7 @@ const AdminDashboard: React.FC = () => {
   // Grade CRUD operations
   const handleCreateGrade = async (gradeData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/meta/grades', {
+      const response = await fetch(API_ENDPOINTS.GRADES, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -292,7 +329,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleUpdateGrade = async (gradeData: any) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/grades/${selectedGrade.grade_id}`, {
+      const response = await fetch(`${API_ENDPOINTS.GRADES}/${selectedGrade.grade_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -317,7 +354,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this grade?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/grades/${gradeId}`, {
+      const response = await fetch(`${API_ENDPOINTS.GRADES}/${gradeId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -340,7 +377,7 @@ const AdminDashboard: React.FC = () => {
   // Subject CRUD operations
   const handleCreateSubject = async (subjectData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/meta/subjects', {
+      const response = await fetch(API_ENDPOINTS.SUBJECTS, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -363,7 +400,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleUpdateSubject = async (subjectData: any) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/subjects/${selectedSubject.subject_id}`, {
+      const response = await fetch(`${API_ENDPOINTS.SUBJECTS}/${selectedSubject.subject_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -388,7 +425,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this subject?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/meta/subjects/${subjectId}`, {
+      const response = await fetch(`${API_ENDPOINTS.SUBJECTS}/${subjectId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -408,6 +445,77 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Tag CRUD operations
+  const handleCreateTag = async (tagData: any) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.TAGS, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tagData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      alert('Failed to create tag');
+    }
+  };
+
+  const handleUpdateTag = async (tagData: any) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TAGS}/${selectedTag.tag_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tagData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error updating tag:', error);
+      alert('Failed to update tag');
+    }
+  };
+
+  const handleDeleteTag = async (tagId: number) => {
+    if (!confirm('Are you sure you want to delete this tag?')) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TAGS}/${tagId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await fetchTags();
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      alert('Failed to delete tag');
+    }
+  };
+
   // Resource CRUD operations
   const handleUpdateResource = async (resourceData: any) => {
     try {
@@ -422,7 +530,7 @@ const AdminDashboard: React.FC = () => {
         resourceData = JSON.stringify(resourceData);
       }
 
-      const response = await fetch(`http://localhost:5000/api/resources/${selectedResource.resource_id}`, {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_BY_ID(selectedResource.resource_id), {
         method: 'PUT',
         headers,
         body: resourceData,
@@ -444,7 +552,7 @@ const AdminDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this resource?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/resources/${resourceId}`, {
+      const response = await fetch(API_ENDPOINTS.RESOURCE_BY_ID(resourceId), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -477,12 +585,20 @@ const AdminDashboard: React.FC = () => {
     setShowSubjectModal(true);
   };
 
+  const openTagModal = (mode: 'create' | 'edit', tag?: any) => {
+    setTagModalMode(mode);
+    setSelectedTag(tag || null);
+    setShowTagModal(true);
+  };
+
   const openResourceViewModal = (resource: any) => {
     setSelectedResource(resource);
     setShowResourceViewModal(true);
   };
 
   const openResourceEditModal = (resource: any) => {
+    console.log('Opening edit modal for resource:', resource);
+    console.log('Resource tags:', resource.tags);
     setSelectedResource(resource);
     setShowResourceEditModal(true);
   };
@@ -511,7 +627,7 @@ const AdminDashboard: React.FC = () => {
 
   const getPreviewImage = (resource: Resource) => {
     if (resource.preview_image) {
-      return `http://localhost:5000/${resource.preview_image}`;
+      return getFileUrl(resource.preview_image);
     }
     return '/logo.png'; // Default logo
   };
@@ -530,15 +646,27 @@ const AdminDashboard: React.FC = () => {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage schools, content, and system settings</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center">
+                <img src="/logo.png" alt="Byline Learning Solutions" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm sm:text-base text-gray-600">Manage content and schools</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">Welcome, {user?.name}</span>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                 {user?.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
               </div>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -552,7 +680,7 @@ const AdminDashboard: React.FC = () => {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'users', label: 'School Management', icon: Users },
               { id: 'content', label: 'Content Management', icon: BookOpen },
-              { id: 'metadata', label: 'Grades & Subjects', icon: Tag },
+              { id: 'metadata', label: 'Metadata', icon: Tag },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -693,13 +821,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-1" 
-                            style={{ backgroundColor: resource.subject_color || '#6B7280' }}
-                          ></div>
-                          <span>{resource.subject_name}</span>
-                        </div>
+                        <span>{resource.subject_name}</span>
                         <span>•</span>
                         <span>{resource.grade_level}</span>
                         <span>•</span>
@@ -1040,7 +1162,7 @@ const AdminDashboard: React.FC = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Downloads</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -1077,13 +1199,7 @@ const AdminDashboard: React.FC = () => {
                               {resource.type_name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center">
-                                <div 
-                                  className="w-3 h-3 rounded-full mr-2" 
-                                  style={{ backgroundColor: resource.subject_color || '#6B7280' }}
-                                ></div>
-                                {resource.subject_name}
-                              </div>
+                              {resource.subject_name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {resource.grade_level}
@@ -1098,14 +1214,10 @@ const AdminDashboard: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex items-center space-x-4">
-                                <span title="Downloads">
-                                  <Download className="w-4 h-4 inline mr-1" />
-                                  {resource.download_count || 0}
-                                </span>
-                                <span title="Views">
-                                  <Eye className="w-4 h-4 inline mr-1" />
-                                  {resource.view_count || 0}
+                              <div className="flex items-center justify-center">
+                                <span title="Downloads" className="flex items-center space-x-1">
+                                  <Download className="w-4 h-4" />
+                                  <span>{resource.download_count || 0}</span>
                                 </span>
                               </div>
                             </td>
@@ -1189,26 +1301,22 @@ const AdminDashboard: React.FC = () => {
                             
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                               <div className="flex items-center">
-                                <div 
+                              <div 
                                   className="w-2 h-2 rounded-full mr-1" 
-                                  style={{ backgroundColor: resource.subject_color || '#6B7280' }}
+                                  style={{ backgroundColor: '#FF0000' }}
                                 ></div>
-                                <span>{resource.subject_name}</span>
+                                <span className='text-gray-500 text-md'>{resource.subject_name}</span>
                               </div>
                               <span>{resource.grade_level}</span>
                             </div>
                             
                             <div className="flex items-center justify-between text-xs text-gray-500">
-                              <div className="flex items-center space-x-3">
-                                <span title="Downloads">
-                                  <Download className="w-3 h-3 inline mr-1" />
-                                  {resource.download_count || 0}
-                                </span>
-                                <span title="Views">
-                                  <Eye className="w-3 h-3 inline mr-1" />
-                                  {resource.view_count || 0}
-                                </span>
-                              </div>
+                                                          <div className="flex items-center justify-center">
+                              <span title="Downloads" className="flex items-center space-x-1">
+                                <Download className="w-3 h-3" />
+                                <span>{resource.download_count || 0}</span>
+                              </span>
+                            </div>
                               <div className="flex items-center space-x-1">
                                 <button 
                                   onClick={() => openResourceViewModal(resource)}
@@ -1338,6 +1446,46 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+            </div>
+
+            {/* Tags Section - Separate Row */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Tags</h3>
+                <button 
+                  onClick={() => openTagModal('create')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Add Tag
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tags.map(tag => (
+                  <div key={tag.tag_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <span className="font-medium text-gray-900">{tag.tag_name}</span>
+                      {tag.description && (
+                        <p className="text-sm text-gray-500">{tag.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => openTagModal('edit', tag)}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteTag(tag.tag_id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -1392,11 +1540,38 @@ const AdminDashboard: React.FC = () => {
         mode={subjectModalMode}
       />
 
+      {/* Tag Modal */}
+      <TagModal
+        isOpen={showTagModal}
+        onClose={() => setShowTagModal(false)}
+        onSubmit={tagModalMode === 'create' ? handleCreateTag : handleUpdateTag}
+        tag={selectedTag}
+        mode={tagModalMode}
+      />
+
       {/* Resource View Modal */}
       <ResourceViewModal
         isOpen={showResourceViewModal}
         onClose={() => setShowResourceViewModal(false)}
         resource={selectedResource}
+        onDownload={(resource) => {
+          // Handle download for admin view
+          window.open(`${API_ENDPOINTS.RESOURCE_DOWNLOAD(resource.resource_id)}`, '_blank');
+        }}
+        getSubjectName={(subjectId) => {
+          const subject = subjects.find(s => s.subject_id === subjectId);
+          return subject ? subject.subject_name : 'Unknown';
+        }}
+        getGradeLevel={(gradeId) => {
+          const grade = grades.find(g => g.grade_id === gradeId);
+          return grade ? grade.grade_level : 'Unknown';
+        }}
+        getTypeName={(typeId) => {
+          const type = resourceTypes.find(t => t.type_id === typeId);
+          return type ? type.type_name : 'Unknown';
+        }}
+        formatFileSize={formatFileSize}
+        formatDate={(dateString) => new Date(dateString).toLocaleDateString()}
       />
 
       {/* Resource Edit Modal */}

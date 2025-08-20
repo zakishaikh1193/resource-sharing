@@ -166,7 +166,7 @@ const LoginPage: React.FC = () => {
         {/* Footer */}
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            © 2024 ICT EduShare. All rights reserved.
+            © 2025 Byline Learning Solutions. All rights reserved.
           </p>
         </div>
       </div>

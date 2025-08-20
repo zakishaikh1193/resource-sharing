@@ -338,6 +338,136 @@ router.get('/tags', async (req, res) => {
   }
 });
 
+// Create a new tag
+router.post('/tags', async (req, res) => {
+  try {
+    const { tag_name, description } = req.body;
+
+    // Check if tag already exists
+    const [existing] = await pool.execute(
+      'SELECT * FROM resource_tags WHERE tag_name = ?',
+      [tag_name]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tag already exists'
+      });
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO resource_tags (tag_name, description) VALUES (?, ?)',
+      [tag_name, description]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Tag created successfully',
+      data: { tag_id: result.insertId }
+    });
+  } catch (error) {
+    console.error('Error creating tag:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create tag'
+    });
+  }
+});
+
+// Update a tag
+router.put('/tags/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tag_name, description } = req.body;
+
+    // Check if tag exists
+    const [existing] = await pool.execute(
+      'SELECT * FROM resource_tags WHERE tag_id = ?',
+      [id]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tag not found'
+      });
+    }
+
+    // Check if new tag_name conflicts with other tags
+    const [conflict] = await pool.execute(
+      'SELECT * FROM resource_tags WHERE tag_name = ? AND tag_id != ?',
+      [tag_name, id]
+    );
+
+    if (conflict.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tag name already exists'
+      });
+    }
+
+    await pool.execute(
+      'UPDATE resource_tags SET tag_name = ?, description = ? WHERE tag_id = ?',
+      [tag_name, description, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Tag updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating tag:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update tag'
+    });
+  }
+});
+
+// Delete a tag
+router.delete('/tags/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if tag is being used in any resources
+    const [usage] = await pool.execute(
+      'SELECT COUNT(*) as count FROM resource_tag_relations WHERE tag_id = ?',
+      [id]
+    );
+
+    if (usage[0].count > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete tag as it is being used by resources'
+      });
+    }
+
+    const [result] = await pool.execute(
+      'DELETE FROM resource_tags WHERE tag_id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tag not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Tag deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting tag:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete tag'
+    });
+  }
+});
+
 // Get statistics
 router.get('/stats', async (req, res) => {
   try {

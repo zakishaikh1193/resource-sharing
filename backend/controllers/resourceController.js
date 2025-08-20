@@ -163,18 +163,26 @@ const getResources = async (req, res) => {
       });
     }
 
-    // Add default values for likes and comments
-    const processedResources = resources.map(resource => ({
-      ...resource,
-      likes: resource.likes || 0,
-      comments: resource.comments || 0,
-      download_count: resource.download_count || 0,
-      view_count: resource.view_count || 0,
-      type_name: 'Unknown',
-      subject_name: 'Unknown',
-      grade_level: 'Unknown',
-      author_name: 'Unknown'
-    }));
+    // Get tags for each resource and remove counts
+    const resourcesWithTags = await Promise.all(
+      resources.map(async (resource) => {
+        const [tags] = await pool.execute(
+          `SELECT t.tag_id, t.tag_name 
+           FROM resource_tag_relations rtr
+           JOIN resource_tags t ON rtr.tag_id = t.tag_id
+           WHERE rtr.resource_id = ?`,
+          [resource.resource_id]
+        );
+        
+        // Remove download_count and view_count, keep other fields
+        const { download_count, view_count, ...resourceWithoutCounts } = resource;
+        
+        return {
+          ...resourceWithoutCounts,
+          tags: tags
+        };
+      })
+    );
 
     // Get total count
     const [countResult] = await pool.execute(
@@ -187,7 +195,7 @@ const getResources = async (req, res) => {
     res.json({
       success: true,
       data: {
-        resources: processedResources,
+        resources: resourcesWithTags,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -246,8 +254,13 @@ const getAllResources = async (req, res) => {
     }
 
     if (search) {
-      conditions.push('(r.title LIKE ? OR r.description LIKE ?)');
-      params.push(`%${search}%`, `%${search}%`);
+      conditions.push(`(r.title LIKE ? OR r.description LIKE ? OR 
+        EXISTS (
+          SELECT 1 FROM resource_tag_relations rtr 
+          JOIN resource_tags t ON rtr.tag_id = t.tag_id 
+          WHERE rtr.resource_id = r.resource_id AND t.tag_name LIKE ?
+        ))`);
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -286,6 +299,23 @@ const getAllResources = async (req, res) => {
       [...params, limitValue, offsetValue]
     );
 
+    // Get tags for each resource
+    const resourcesWithTags = await Promise.all(
+      resources.map(async (resource) => {
+        const [tags] = await pool.execute(
+          `SELECT t.tag_id, t.tag_name 
+           FROM resource_tag_relations rtr
+           JOIN resource_tags t ON rtr.tag_id = t.tag_id
+           WHERE rtr.resource_id = ?`,
+          [resource.resource_id]
+        );
+        return {
+          ...resource,
+          tags: tags
+        };
+      })
+    );
+
     // Get total count
     const [countResult] = await pool.query(
       `SELECT COUNT(*) as total FROM resources r ${whereClause}`,
@@ -295,7 +325,7 @@ const getAllResources = async (req, res) => {
     const total = countResult[0].total;
 
     // Resources already have joined data, no need to add defaults
-    const processedResources = resources;
+    const processedResources = resourcesWithTags;
 
     res.json({
       success: true,
@@ -399,7 +429,7 @@ const getResourceById = async (req, res) => {
 const updateResource = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, subject_id, grade_id, status, tags } = req.body;
+    const { title, description, type_id, subject_id, grade_id, status, tags } = req.body;
 
     // Check if resource exists and user has permission
     const [resources] = await pool.execute(
@@ -456,6 +486,11 @@ const updateResource = async (req, res) => {
     if (description !== undefined) {
       updateFields.push('description = ?');
       updateParams.push(description);
+    }
+
+    if (type_id) {
+      updateFields.push('type_id = ?');
+      updateParams.push(type_id);
     }
 
     if (subject_id) {
