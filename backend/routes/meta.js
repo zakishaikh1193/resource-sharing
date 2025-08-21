@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { verifyToken, requireAdmin } = require('../middleware/auth');
 
 // Get all grades
 router.get('/grades', async (req, res) => {
@@ -40,8 +41,8 @@ router.get('/subjects', async (req, res) => {
   }
 });
 
-// Create a new grade
-router.post('/grades', async (req, res) => {
+// Create a new grade - Admin only
+router.post('/grades', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { grade_level, description } = req.body;
 
@@ -77,8 +78,8 @@ router.post('/grades', async (req, res) => {
   }
 });
 
-// Update a grade
-router.put('/grades/:id', async (req, res) => {
+// Update a grade - Admin only
+router.put('/grades/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { grade_level, description } = req.body;
@@ -127,8 +128,8 @@ router.put('/grades/:id', async (req, res) => {
   }
 });
 
-// Delete a grade
-router.delete('/grades/:id', async (req, res) => {
+// Delete a grade - Admin only
+router.delete('/grades/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -170,8 +171,8 @@ router.delete('/grades/:id', async (req, res) => {
   }
 });
 
-// Create a new subject
-router.post('/subjects', async (req, res) => {
+// Create a new subject - Admin only
+router.post('/subjects', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { subject_name, description } = req.body;
 
@@ -207,8 +208,8 @@ router.post('/subjects', async (req, res) => {
   }
 });
 
-// Update a subject
-router.put('/subjects/:id', async (req, res) => {
+// Update a subject - Admin only
+router.put('/subjects/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { subject_name, description } = req.body;
@@ -257,8 +258,8 @@ router.put('/subjects/:id', async (req, res) => {
   }
 });
 
-// Delete a subject
-router.delete('/subjects/:id', async (req, res) => {
+// Delete a subject - Admin only
+router.delete('/subjects/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -338,8 +339,8 @@ router.get('/tags', async (req, res) => {
   }
 });
 
-// Create a new tag
-router.post('/tags', async (req, res) => {
+// Create a new tag - Admin only
+router.post('/tags', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { tag_name, description } = req.body;
 
@@ -375,8 +376,8 @@ router.post('/tags', async (req, res) => {
   }
 });
 
-// Update a tag
-router.put('/tags/:id', async (req, res) => {
+// Update a tag - Admin only
+router.put('/tags/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { tag_name, description } = req.body;
@@ -425,8 +426,8 @@ router.put('/tags/:id', async (req, res) => {
   }
 });
 
-// Delete a tag
-router.delete('/tags/:id', async (req, res) => {
+// Delete a tag - Admin only
+router.delete('/tags/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 

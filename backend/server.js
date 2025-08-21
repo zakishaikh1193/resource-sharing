@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // CORS configuration - optimized for large uploads
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173', 'https://resources.bylinelms.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
