@@ -1,15 +1,21 @@
 const { pool } = require('../config/database');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // Create new resource
 const createResource = async (req, res) => {
   try {
+    console.log('=== Resource Creation Started ===');
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files ? Object.keys(req.files) : 'No files');
+    
     const { title, description, subject_id, grade_id, type_id, tags, status = 'draft' } = req.body;
     
     // Check for main file
     if (!req.files || !req.files.file || !req.files.file[0]) {
+      console.log('File validation failed - no file uploaded');
       return res.status(400).json({
         success: false,
         message: 'File is required'
@@ -22,11 +28,26 @@ const createResource = async (req, res) => {
     const fileSize = mainFile.size;
     const fileExtension = path.extname(fileName).substring(1);
 
+    console.log('File details:', {
+      originalName: fileName,
+      path: filePath,
+      size: fileSize,
+      extension: fileExtension
+    });
+
     // Handle preview image
     let previewImagePath = null;
     if (req.files.preview_image && req.files.preview_image[0]) {
       previewImagePath = req.files.preview_image[0].path;
+      console.log('Preview image path:', previewImagePath);
     }
+
+    console.log('About to insert resource into database...');
+    console.log('Insert parameters:', {
+      title, description, type_id, subject_id, grade_id, 
+      created_by: req.user.user_id, filePath, fileName, fileSize, 
+      fileExtension, previewImagePath, status
+    });
 
     // Insert resource
     const [result] = await pool.execute(
@@ -76,9 +97,97 @@ const createResource = async (req, res) => {
     });
   } catch (error) {
     console.error('Create resource error:', error);
+    
+    // Enhanced error logging for debugging
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      errno: error.errno,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState
+    });
+
+    // Provide detailed error response based on error type
+    let errorMessage = 'Failed to create resource';
+    let statusCode = 500;
+
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      errorMessage = 'Database table does not exist';
+      statusCode = 500;
+    } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+      errorMessage = 'Database access denied';
+      statusCode = 500;
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Database connection refused';
+      statusCode = 500;
+    } else if (error.code === 'ENOENT') {
+      errorMessage = 'Upload directory not found or not accessible';
+      statusCode = 500;
+    } else if (error.code === 'EACCES') {
+      errorMessage = 'Permission denied for upload directory';
+      statusCode = 500;
+    } else if (error.sqlMessage) {
+      errorMessage = `Database error: ${error.sqlMessage}`;
+      statusCode = 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+      statusCode = 500;
+    }
+
+    res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? {
+        code: error.code,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack
+      } : undefined
+    });
+  }
+};
+
+// Debug endpoint to check upload configuration
+const debugUploadConfig = async (req, res) => {
+  try {
+    const uploadDir = process.env.UPLOAD_PATH || './uploads';
+    const currentDir = process.cwd();
+    const absoluteUploadPath = path.resolve(uploadDir);
+    
+    const config = {
+      uploadDir,
+      currentDir,
+      absoluteUploadPath,
+      uploadDirExists: fsSync.existsSync(uploadDir),
+      absolutePathExists: fsSync.existsSync(absoluteUploadPath),
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        UPLOAD_PATH: process.env.UPLOAD_PATH
+      }
+    };
+
+    // Test write permissions
+    try {
+      const testFile = path.join(uploadDir, 'test-write-permission.tmp');
+      fsSync.writeFileSync(testFile, 'test');
+      fsSync.unlinkSync(testFile);
+      config.writable = true;
+    } catch (error) {
+      config.writable = false;
+      config.writeError = error.message;
+    }
+
+    res.json({
+      success: true,
+      message: 'Upload configuration debug info',
+      data: config
+    });
+  } catch (error) {
+    console.error('Debug upload config error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create resource'
+      message: 'Failed to get debug info',
+      error: error.message
     });
   }
 };
@@ -837,5 +946,6 @@ module.exports = {
   downloadResource,
   toggleLike,
   getPopularResources,
-  getUserResources
+  getUserResources,
+  debugUploadConfig
 };

@@ -7,7 +7,7 @@ interface AddResourceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (resource: any) => void;
-  initialGrade?: number;
+  initialGrade?: number; // Optional, will use first available grade if not provided
 }
 
 interface Grade {
@@ -49,7 +49,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   isOpen, 
   onClose, 
   onSubmit, 
-  initialGrade = 1
+  initialGrade
 }) => {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -61,8 +61,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
     title: '',
     description: '',
     type_id: 1,
-    subject_id: 1,
-    grade_id: initialGrade,
+    subject_id: 0, // Will be set after loading metadata
+    grade_id: 0, // Will be set after loading metadata
     tags: [] as number[],
     status: 'draft'
   });
@@ -123,6 +123,21 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       const gradesData = await gradesResponse.json();
       if (gradesData.success) {
         setGrades(gradesData.data);
+        // Set default grade to first available grade
+        if (gradesData.data.length > 0) {
+          let defaultGradeId = gradesData.data[0].grade_id; // Default to first grade
+          
+          if (initialGrade) {
+            // If initialGrade is provided, try to find matching grade
+            const matchingGrade = gradesData.data.find((g: Grade) => g.grade_number === initialGrade);
+            if (matchingGrade) {
+              defaultGradeId = matchingGrade.grade_id;
+            }
+          }
+          
+          console.log('Setting default grade_id:', defaultGradeId);
+          setFormData(prev => ({ ...prev, grade_id: defaultGradeId }));
+        }
       }
 
       // Load subjects
@@ -130,6 +145,12 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       const subjectsData = await subjectsResponse.json();
       if (subjectsData.success) {
         setSubjects(subjectsData.data);
+        // Set default subject to first available subject
+        if (subjectsData.data.length > 0) {
+          const defaultSubjectId = subjectsData.data[0].subject_id;
+          console.log('Setting default subject_id:', defaultSubjectId);
+          setFormData(prev => ({ ...prev, subject_id: defaultSubjectId }));
+        }
       }
 
       // Load resource types
@@ -253,6 +274,17 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
       submitData.append('grade_id', formData.grade_id.toString());
       submitData.append('status', formData.status);
       
+      // Debug: Log the form data being sent
+      console.log('Form data being sent:', {
+        title: formData.title,
+        description: formData.description,
+        type_id: formData.type_id,
+        subject_id: formData.subject_id,
+        grade_id: formData.grade_id,
+        status: formData.status,
+        tags: formData.tags
+      });
+      
       if (formData.tags.length > 0) {
         formData.tags.forEach(tagId => {
           submitData.append('tags[]', tagId.toString());
@@ -294,8 +326,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                   title: '',
                   description: '',
                   type_id: 1,
-                  subject_id: 1,
-                  grade_id: initialGrade,
+                  subject_id: subjects.length > 0 ? subjects[0].subject_id : 0,
+                  grade_id: grades.length > 0 ? grades[0].grade_id : 0,
                   tags: [],
                   status: 'draft'
                 });
@@ -354,8 +386,8 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         title: '',
         description: '',
         type_id: 1,
-        subject_id: 1,
-        grade_id: initialGrade,
+        subject_id: subjects.length > 0 ? subjects[0].subject_id : 0,
+        grade_id: grades.length > 0 ? grades[0].grade_id : 0,
         tags: [],
         status: 'draft'
       });

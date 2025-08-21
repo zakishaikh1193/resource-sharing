@@ -1519,7 +1519,6 @@ const AdminDashboard: React.FC = () => {
         isOpen={showResourceModal}
         onClose={() => setShowResourceModal(false)}
         onSubmit={handleCreateResource}
-        initialGrade={1}
       />
 
       {/* Grade Modal */}
