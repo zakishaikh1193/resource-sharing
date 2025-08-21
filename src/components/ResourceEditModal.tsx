@@ -615,7 +615,7 @@ const ResourceEditModal: React.FC<ResourceEditModalProps> = ({
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.zip,.rar,.mp4,.avi,.mov,.wmv,.flv,.mkv,.webm,.jpg,.jpeg,.png,.gif"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.zip,.rar,.mp4,.mp3,.avi,.mov,.wmv,.flv,.mkv,.webm,.jpg,.jpeg,.png,.gif"
                 disabled={isLoading}
               />
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />

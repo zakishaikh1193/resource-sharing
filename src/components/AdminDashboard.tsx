@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, Settings, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, ChevronDown, LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
@@ -8,6 +8,7 @@ import SubjectModal from './SubjectModal';
 import ResourceViewModal from './ResourceViewModal';
 import ResourceEditModal from './ResourceEditModal';
 import TagModal from './TagModal';
+import Sidebar from './Sidebar';
 import { API_ENDPOINTS, getFileUrl } from '../config/api';
 
 interface User {
@@ -76,7 +77,10 @@ const AdminDashboard: React.FC = () => {
   const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
   const [selectedTag, setSelectedTag] = useState<any>(null);
   const [showTagModal, setShowTagModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata'>('overview');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -86,6 +90,20 @@ const AdminDashboard: React.FC = () => {
     fetchResourceTypes();
     fetchTags();
   }, [token]);
+
+  // Handle click outside to close user dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchUsers = async () => {
     if (!token) {
@@ -642,68 +660,78 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center">
-                <img src="/logo.png" alt="Byline Learning Solutions" className="w-full h-full object-contain" />
+      {/* Sidebar */}
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+
+      {/* Main Content */}
+      <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-80'} transition-all duration-300 ease-in-out min-h-screen`}>
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center">
+                  <img src="/logo.png" alt="Byline Learning Solutions" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                  <p className="text-sm sm:text-base text-gray-600">Manage content and schools</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm sm:text-base text-gray-600">Manage content and schools</p>
+              <div className="flex items-center space-x-4">
+                <div className="relative" ref={userDropdownRef}>
+                  <button
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      {user?.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <span className="text-sm text-gray-700 font-medium">{user?.name}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* User Dropdown */}
+                  {showUserDropdown && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                            {user?.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+                            <p className="text-xs text-gray-500">{user?.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
+                            logout();
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Welcome, {user?.name}</span>
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                {user?.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'users', label: 'School Management', icon: Users },
-              { id: 'content', label: 'Content Management', icon: BookOpen },
-              { id: 'metadata', label: 'Metadata', icon: Tag },
-              { id: 'settings', label: 'Settings', icon: Settings },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="px-6 py-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
@@ -788,59 +816,119 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </button>
 
-                <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-gray-900">System Settings</p>
-                    <p className="text-sm text-gray-500">Configure platform settings</p>
-                  </div>
-                </button>
+
               </div>
             </div>
 
             {/* Recent Resources */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Resources</h3>
-              <div className="space-y-4">
-                {resources.slice(0, 5).map((resource) => (
-                  <div key={resource.resource_id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    {/* Preview Image */}
-                    <div className="w-12 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                      <img
-                        src={getPreviewImage(resource)}
-                        alt={resource.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/logo.png';
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        <span>{resource.subject_name}</span>
-                        <span>•</span>
-                        <span>{resource.grade_level}</span>
-                        <span>•</span>
-                        <span>{resource.type_name}</span>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Recent Resources</h3>
+                <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="List View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'grid' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    title="Grid View"
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              {viewMode === 'list' ? (
+                // List View
+                <div className="space-y-4">
+                  {resources.slice(0, 5).map((resource) => (
+                    <div key={resource.resource_id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      {/* Preview Image */}
+                      <div className="w-12 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                        <img
+                          src={getPreviewImage(resource)}
+                          alt={resource.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/logo.png';
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <span>{resource.subject_name}</span>
+                          <span>•</span>
+                          <span>{resource.grade_level}</span>
+                          <span>•</span>
+                          <span>{resource.type_name}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end text-xs text-gray-400">
+                        <span>{new Date(resource.created_at).toLocaleDateString()}</span>
+                        <span className="text-gray-500">{formatFileSize(resource.file_size)}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end text-xs text-gray-400">
-                      <span>{new Date(resource.created_at).toLocaleDateString()}</span>
-                      <span className="text-gray-500">{formatFileSize(resource.file_size)}</span>
+                  ))}
+                </div>
+              ) : (
+                // Grid View
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {resources.slice(0, 6).map((resource) => (
+                    <div key={resource.resource_id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                      {/* Preview Image */}
+                      <div className="aspect-[3/2] bg-gray-200 rounded-lg overflow-hidden mb-3">
+                        <img
+                          src={getPreviewImage(resource)}
+                          alt={resource.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/logo.png';
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Content */}
+                      <div>
+                        <h4 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">{resource.title}</h4>
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span>{resource.subject_name}</span>
+                            <span>•</span>
+                            <span>{resource.grade_level}</span>
+                          </div>
+                          <span>{resource.type_name}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span>{new Date(resource.created_at).toLocaleDateString()}</span>
+                          <span>{formatFileSize(resource.file_size)}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {resources.length === 0 && (
-                  <div className="text-center py-8">
-                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No resources uploaded yet</p>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
+              
+              {resources.length === 0 && (
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No resources uploaded yet</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1490,21 +1578,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">System Settings</h2>
-              <p className="text-gray-600">Configure platform settings and preferences</p>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">System Settings</h3>
-              <p className="text-gray-600">This feature will be implemented soon.</p>
-            </div>
-          </div>
-        )}
+
+      </div>
       </div>
 
       {/* Create School Modal */}

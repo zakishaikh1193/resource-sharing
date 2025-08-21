@@ -509,83 +509,129 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Resource</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Upload className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Add New Resource</h2>
+              <p className="text-sm text-gray-600 font-medium">Upload educational content for schools</p>
+            </div>
+          </div>
           <button
             onClick={handleClose}
             disabled={isLoading}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-3 text-gray-500 hover:text-gray-700 hover:bg-white rounded-xl transition-all duration-200 disabled:opacity-50 shadow-sm"
           >
-            <X size={20} className="text-gray-600" />
+            <X size={24} className="text-gray-600" />
           </button>
         </div>
 
-        {/* Success Message */}
-        {success && (
-          <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <div className="ml-3">
-                <p className="text-sm text-green-800">{success}</p>
+                  {/* Success Message */}
+          {success && (
+            <div className="mx-6 mt-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                  <CheckCircle className="h-5 w-5 text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-base font-medium text-green-800">{success}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
+                  {/* Error Message */}
+          {error && (
+            <div className="mx-6 mt-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-base font-medium text-red-800">{error}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Resource Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="Enter a descriptive title..."
-              disabled={isLoading}
-            />
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Title and Description */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Resource Title *
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
+                  placeholder="Enter a descriptive title..."
+                  disabled={isLoading}
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Status
+              </label>
+              <div className="relative">
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white appearance-none"
+                  disabled={isLoading}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
               Description *
             </label>
-            <textarea
-              required
-              rows={4}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-              placeholder="Describe your resource and how it can be used..."
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <textarea
+                required
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
+                placeholder="Describe your resource and how it can be used..."
+                disabled={isLoading}
+              />
+              <div className="absolute top-4 right-4 pointer-events-none">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              </div>
+            </div>
           </div>
 
           {/* Resource Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700">
               Resource Type *
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {resourceTypes.map((type) => {
                 const Icon = typeIcons[type.type_name as keyof typeof typeIcons] || FileText;
                 return (
@@ -593,15 +639,15 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                     key={type.type_id}
                     type="button"
                     onClick={() => setFormData({ ...formData, type_id: type.type_id })}
-                    className={`p-3 rounded-lg border-2 transition-all ${
+                    className={`p-5 rounded-xl border-2 transition-all duration-200 ${
                       formData.type_id === type.type_id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg transform scale-105'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-md hover:bg-gray-50'
                     }`}
                     disabled={isLoading}
                   >
-                    <Icon size={20} className="mx-auto mb-1 text-blue-600" />
-                    <span className="text-xs font-medium">{type.type_name}</span>
+                    <Icon size={28} className={`mx-auto mb-3 ${formData.type_id === type.type_id ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span className={`text-sm font-semibold ${formData.type_id === type.type_id ? 'text-blue-700' : 'text-gray-600'}`}>{type.type_name}</span>
                   </button>
                 );
               })}
@@ -609,48 +655,61 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           </div>
 
           {/* Subject and Grade Level */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
                 Subject *
               </label>
-              <select
-                required
-                value={formData.subject_id}
-                onChange={(e) => setFormData({ ...formData, subject_id: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                disabled={isLoading}
-              >
+              <div className="relative">
+                <select
+                  required
+                  value={formData.subject_id}
+                  onChange={(e) => setFormData({ ...formData, subject_id: parseInt(e.target.value) })}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white appearance-none"
+                  disabled={isLoading}
+                >
                 {subjects.map(subject => (
                   <option key={subject.subject_id} value={subject.subject_id}>
                     {subject.subject_name}
                   </option>
                 ))}
               </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
                 Grade Level *
               </label>
-              <select
-                required
-                value={formData.grade_id}
-                onChange={(e) => setFormData({ ...formData, grade_id: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                disabled={isLoading}
-              >
+              <div className="relative">
+                <select
+                  required
+                  value={formData.grade_id}
+                  onChange={(e) => setFormData({ ...formData, grade_id: parseInt(e.target.value) })}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white appearance-none"
+                  disabled={isLoading}
+                >
                 {grades.map(grade => (
                   <option key={grade.grade_id} value={grade.grade_id}>
                     {grade.grade_level}
                   </option>
                 ))}
               </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
+          </div>
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
               Tags
             </label>
             
@@ -666,7 +725,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                     onKeyDown={handleTagInputKeyDown}
                     onFocus={() => setShowTagSuggestions(true)}
                     placeholder="Add or select a tag"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                     disabled={isLoading}
                   />
                  
@@ -675,7 +734,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                   type="button"
                   onClick={handleCreateTag}
                   disabled={!tagSearchTerm.trim() || isCreatingTag || isLoading}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   {isCreatingTag ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -750,119 +809,105 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* File Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload File *
-            </label>
-            <div
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-            >
-              <input
-                type="file"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="file-upload"
-                disabled={isLoading}
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <Upload size={40} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-500">
-                  {selectedFile ? selectedFile.name : 'PDF, DOC, PPT, Video, Image files (max 100MB)'}
-                </p>
-              </label>
-            </div>
-            {fileError && (
-              <p className="text-sm text-red-600 mt-2">{fileError}</p>
-            )}
-            {selectedFile && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-800">
-                  ✓ {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
-              </div>
-            )}
           </div>
 
-          {/* Preview Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Preview Image (Optional)
-            </label>
-            <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-            >
-              <input
-                type="file"
-                onChange={handlePreviewImageSelect}
-                className="hidden"
-                id="preview-image-upload"
-                accept="image/*"
-                disabled={isLoading}
-              />
-              <label htmlFor="preview-image-upload" className="cursor-pointer">
-                <Upload size={40} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Click to upload preview image</p>
-                <p className="text-xs text-gray-500">
-                  {previewImage ? previewImage.name : 'JPG, PNG, GIF, WebP files (max 5MB)'}
-                </p>
+          {/* File Upload and Preview Image */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Upload File *
               </label>
-            </div>
-            {previewImageError && (
-              <p className="text-sm text-red-600 mt-2">{previewImageError}</p>
-            )}
-            {previewImage && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-800">
-                  ✓ {previewImage.name} ({(previewImage.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors"
+              >
+                <input
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="file-upload"
+                  disabled={isLoading}
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Upload size={40} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-500">
+                    {selectedFile ? selectedFile.name : 'PDF, DOC, PPT, Video, Image files (max 100MB)'}
+                  </p>
+                </label>
               </div>
-            )}
-          </div>
+              {fileError && (
+                <p className="text-sm text-red-600 mt-2">{fileError}</p>
+              )}
+              {selectedFile && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    ✓ {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                </div>
+              )}
+            </div>
 
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              disabled={isLoading}
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Preview Image (Optional)
+              </label>
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors"
+              >
+                <input
+                  type="file"
+                  onChange={handlePreviewImageSelect}
+                  className="hidden"
+                  id="preview-image-upload"
+                  accept="image/*"
+                  disabled={isLoading}
+                />
+                <label htmlFor="preview-image-upload" className="cursor-pointer">
+                  <Upload size={40} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Click to upload preview image</p>
+                  <p className="text-xs text-gray-500">
+                    {previewImage ? previewImage.name : 'JPG, PNG, GIF, WebP files (max 5MB)'}
+                  </p>
+                </label>
+              </div>
+              {previewImageError && (
+                <p className="text-sm text-red-600 mt-2">{previewImageError}</p>
+              )}
+              {previewImage && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    ✓ {previewImage.name} ({(previewImage.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-4 pt-8 border-t border-gray-200">
             <button
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 font-medium shadow-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading || !selectedFile}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center space-x-2"
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-lg font-medium transform hover:scale-105"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Uploading...</span>
-                </>
-              ) : (
-                <span>Create Resource</span>
-              )}
+                              {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Uploading Resource...</span>
+                  </>
+                ) : (
+                  <span>Create Resource</span>
+                )}
             </button>
           </div>
 
