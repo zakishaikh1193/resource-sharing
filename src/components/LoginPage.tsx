@@ -37,7 +37,7 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 via-blue-50 to-blue-200 flex items-center justify-center p-4">
       {/* Main Container */}
-      <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full h-[600px] overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full h-[600px] overflow-hidden">
         <div className="flex">
           {/* Left Section - Login Form */}
                      <div className="flex-1 p-10 lg:p-16">
@@ -126,11 +126,6 @@ const LoginPage: React.FC = () => {
         {/* Footer */}
                  <div className="px-10 lg:px-16 py-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
           <span>Copyright @Byline Learning Solutions 2025</span>
-          <div className="flex space-x-4">
-            <a href="#" className="hover:text-gray-700">Terms & Conditions</a>
-            <a href="#" className="hover:text-gray-700">Privacy Policy</a>
-            <a href="#" className="hover:text-gray-700">Help</a>
-          </div>
           <div className="flex space-x-2">
             <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
             <div className="w-3 h-3 bg-blue-400 rounded-full"></div>

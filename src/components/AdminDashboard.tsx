@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, ChevronDown, LogOut, User } from 'lucide-react';
+import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, ChevronDown, LogOut, User, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
 import { AddResourceModal } from './AddResourceModal';
@@ -81,6 +81,26 @@ const AdminDashboard: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Content management mode state
+  const [contentMode, setContentMode] = useState<'view' | 'edit'>('view');
+  
+  // Kanban view state
+  const kanbanRef = useRef<HTMLDivElement>(null);
+  const contentKanbanRef = useRef<HTMLDivElement>(null);
+  
+  // Download progress state
+  const [downloadProgress, setDownloadProgress] = useState<{
+    isDownloading: boolean;
+    progress: number;
+    fileName: string;
+    showSuccess: boolean;
+  }>({
+    isDownloading: false,
+    progress: 0,
+    fileName: '',
+    showSuccess: false
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -650,6 +670,58 @@ const AdminDashboard: React.FC = () => {
     return '/logo.png'; // Default logo
   };
 
+  // Helper functions for Kanban view
+  const getResourcesForGrade = (gradeLevel: string) => {
+    return filteredResources.filter(resource => resource.grade_level === gradeLevel);
+  };
+
+  // Scroll Kanban board
+  const scrollKanban = (direction: 'left' | 'right', ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      const scrollAmount = 400;
+      const newScrollLeft = ref.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      ref.current.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+    }
+  };
+
+  // Helper function to get grade colors
+  const getGradeColor = (gradeLevel: string) => {
+    const colors = [
+      { bg: 'bg-red-500', border: 'border-red-500' },
+      { bg: 'bg-orange-500', border: 'border-orange-500' },
+      { bg: 'bg-yellow-500', border: 'border-yellow-500' },
+      { bg: 'bg-green-500', border: 'border-green-500' },
+      { bg: 'bg-blue-500', border: 'border-blue-500' },
+      { bg: 'bg-purple-500', border: 'border-purple-500' },
+      { bg: 'bg-pink-500', border: 'border-pink-500' },
+      { bg: 'bg-indigo-500', border: 'border-indigo-500' }
+    ];
+    
+    // Use grade level string to generate consistent color
+    const index = gradeLevel.length % colors.length;
+    return colors[index];
+  };
+
+  // Helper function to get tag colors
+  const getTagColor = (tagId: number) => {
+    const colors = [
+      'bg-pink-100 text-pink-700 border-pink-200',
+      'bg-blue-100 text-blue-700 border-blue-200',
+      'bg-green-100 text-green-700 border-green-200',
+      'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'bg-purple-100 text-purple-700 border-purple-200',
+      'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'bg-red-100 text-red-700 border-red-200',
+      'bg-orange-100 text-orange-700 border-orange-200',
+      'bg-teal-100 text-teal-700 border-teal-200',
+      'bg-cyan-100 text-cyan-700 border-cyan-200',
+      'bg-lime-100 text-lime-700 border-lime-200',
+      'bg-emerald-100 text-emerald-700 border-emerald-200'
+    ];
+    
+    return colors[tagId % colors.length];
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -820,115 +892,101 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Recent Resources */}
+            {/* Recent Resources Kanban */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Resources</h3>
-                <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-md transition-colors ${
-                      viewMode === 'list' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-colors ${
-                      viewMode === 'grid' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    title="Grid View"
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setActiveTab('content')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All →
+                </button>
               </div>
               
-              {viewMode === 'list' ? (
-                // List View
-                <div className="space-y-4">
-                  {resources.slice(0, 5).map((resource) => (
-                    <div key={resource.resource_id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      {/* Preview Image */}
-                      <div className="w-12 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                        <img
-                          src={getPreviewImage(resource)}
-                          alt={resource.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/logo.png';
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span>{resource.subject_name}</span>
-                          <span>•</span>
-                          <span>{resource.grade_level}</span>
-                          <span>•</span>
-                          <span>{resource.type_name}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end text-xs text-gray-400">
-                        <span>{new Date(resource.created_at).toLocaleDateString()}</span>
-                        <span className="text-gray-500">{formatFileSize(resource.file_size)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // Grid View
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {resources.slice(0, 6).map((resource) => (
-                    <div key={resource.resource_id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                      {/* Preview Image */}
-                      <div className="aspect-[3/2] bg-gray-200 rounded-lg overflow-hidden mb-3">
-                        <img
-                          src={getPreviewImage(resource)}
-                          alt={resource.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/logo.png';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Content */}
-                      <div>
-                        <h4 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">{resource.title}</h4>
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span>{resource.subject_name}</span>
-                            <span>•</span>
-                            <span>{resource.grade_level}</span>
+              {/* Mini Kanban for Recent Resources */}
+              <div className="flex space-x-6 overflow-x-auto pb-4 kanban-scroll">
+                {grades.slice(0, 4).map((grade) => {
+                  const gradeResources = getResourcesForGrade(grade.grade_level).slice(0, 3);
+                  const gradeColor = getGradeColor(grade.grade_level);
+                  
+                  if (gradeResources.length === 0) return null;
+                  
+                  return (
+                    <div key={grade.grade_id} className="flex-shrink-0 w-72">
+                      {/* Grade Column Header */}
+                      <div className={`${gradeColor.bg} ${gradeColor.border} rounded-t-xl p-3 mb-3`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{grade.grade_level}</h4>
+                            <p className="text-xs text-white/80">{gradeResources.length} recent</p>
                           </div>
-                          <span>{resource.type_name}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>{new Date(resource.created_at).toLocaleDateString()}</span>
-                          <span>{formatFileSize(resource.file_size)}</span>
+                          <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-white" />
+                          </div>
                         </div>
                       </div>
+
+                      {/* Resources in this grade */}
+                      <div className="space-y-2">
+                        {gradeResources.map((resource) => {
+                          const IconComponent = getFileIcon(resource.type_name);
+                          
+                          return (
+                            <div 
+                              key={resource.resource_id} 
+                              className="group bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-blue-200 transition-all duration-200 transform hover:-translate-y-0.5"
+                            >
+                              {/* Thumbnail Image */}
+                              <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+                                <img
+                                  src={getPreviewImage(resource)}
+                                  alt={resource.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+
+                              {/* Content */}
+                              <div className="p-3">
+                                {/* Title */}
+                                <h4 className="font-bold text-gray-900 text-xs mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                  {resource.title}
+                                </h4>
+                                
+                                {/* Description */}
+                                <p className="text-xs text-gray-600 line-clamp-1 leading-relaxed mb-2">
+                                  {resource.description}
+                                </p>
+
+                                {/* Subject and Type */}
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-full">
+                                    {resource.subject_name}
+                                  </span>
+                                  <span className="text-xs text-gray-500">{resource.type_name}</span>
+                                </div>
+
+                                {/* Action Button */}
+                                <button
+                                  onClick={() => openResourceViewModal(resource)}
+                                  className="w-full flex items-center justify-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] text-xs"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>View</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {resources.length === 0 && (
-                <div className="text-center py-8">
-                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No resources uploaded yet</p>
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -1089,17 +1147,66 @@ const AdminDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Content Management</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Content Management
+                  {contentMode === 'edit' && (
+                    <span className="ml-3 text-sm font-normal text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">
+                      Edit Mode
+                    </span>
+                  )}
+                </h2>
                 <p className="text-gray-600">Create and manage educational resources for schools</p>
               </div>
-              <button
-                onClick={() => setShowResourceModal(true)}
-                className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Upload Resource</span>
-              </button>
+              <div className="flex items-center space-x-4">
+                {/* View/Edit Mode Toggle */}
+                <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setContentMode('view')}
+                    className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                      contentMode === 'view' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4 inline mr-2" />
+                    View
+                  </button>
+                  <button
+                    onClick={() => setContentMode('edit')}
+                    className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                      contentMode === 'edit' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Edit className="w-4 h-4 inline mr-2" />
+                    Edit
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setSelectedGrade(null); // Reset selected grade for general upload
+                    setShowResourceModal(true);
+                  }}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload Resource</span>
+                </button>
+              </div>
             </div>
+
+            {/* Mode Indicator */}
+            {contentMode === 'edit' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <Edit className="w-5 h-5 text-yellow-600" />
+                  <span className="text-yellow-800 font-medium">Edit Mode Active</span>
+                  <span className="text-yellow-600 text-sm">You can now edit grades, add resources to specific grades, and edit individual resources.</span>
+                </div>
+              </div>
+            )}
 
             {/* Resource Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -1232,223 +1339,249 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Resources Display */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              {isLoadingResources ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            {/* Kanban Board */}
+            {filteredResources.length > 0 ? (
+              <div className="relative min-h-[800px]">
+                {/* Scroll Controls */}
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollKanban('left', contentKanbanRef)}
+                    className="w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
                 </div>
-              ) : filteredResources.length > 0 ? (
-                viewMode === 'list' ? (
-                  // List View
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Downloads</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredResources.map((resource) => (
-                          <tr key={resource.resource_id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                                                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                                {resource.preview_image ? (
+                
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollKanban('right', contentKanbanRef)}
+                    className="w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <ArrowRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Kanban Board */}
+                <div 
+                  ref={contentKanbanRef}
+                  className="flex space-x-8 overflow-x-auto pb-6 kanban-scroll"
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#CBD5E1 #F1F5F9'
+                  }}
+                >
+                  {grades.map((grade) => {
+                    const gradeResources = getResourcesForGrade(grade.grade_level);
+                    const gradeColor = getGradeColor(grade.grade_level);
+                    
+                    return (
+                      <div key={grade.grade_id} className="flex-shrink-0 w-80">
+                        {/* Grade Column Header */}
+                        <div className={`${gradeColor.bg} ${gradeColor.border} rounded-t-xl p-4 mb-4`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-white">{grade.grade_level}</h3>
+                              <p className="text-sm text-white/80">{gradeResources.length} resources</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {contentMode === 'edit' && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      // Set the grade context for adding a resource
+                                      setSelectedGrade(grade);
+                                      setShowResourceModal(true);
+                                    }}
+                                    className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                                    title="Add Resource to this Grade"
+                                  >
+                                    <span className="text-white font-bold text-sm">+</span>
+                                  </button>
+                                  <button
+                                    onClick={() => openGradeModal('edit', grade)}
+                                    className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                                    title="Edit Grade"
+                                  >
+                                    <span className="text-white font-bold text-sm">⋯</span>
+                                  </button>
+                                </>
+                              )}
+                              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                <BookOpen className="w-5 h-5 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Resources in this grade */}
+                        <div className="space-y-3 max-h-[1000px] overflow-y-auto">
+                          {gradeResources.length === 0 && contentMode === 'edit' && (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+                                 onClick={() => {
+                                   setSelectedGrade(grade);
+                                   setShowResourceModal(true);
+                                 }}>
+                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <span className="text-blue-600 font-bold text-xl">+</span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-700">Add Resource</p>
+                              <p className="text-xs text-gray-500 mt-1">Click to add a new resource</p>
+                            </div>
+                          )}
+                          {gradeResources.map((resource) => {
+                            const IconComponent = getFileIcon(resource.type_name);
+                            
+                            return (
+                              <div 
+                                key={resource.resource_id} 
+                                className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1"
+                              >
+                                {/* Thumbnail Image */}
+                                <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
                                   <img
                                     src={getPreviewImage(resource)}
                                     alt={resource.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
                                     }}
                                   />
-                                ) : null}
-                                {!resource.preview_image && (() => {
-                                  const IconComponent = getFileIcon(resource.type_name);
-                                  return <IconComponent className="w-5 h-5 text-gray-500" />;
-                                })()}
-                              </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{resource.title}</div>
-                                  <div className="text-sm text-gray-500">{formatFileSize(resource.file_size)}</div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-3">
+                                  {/* Title */}
+                                  <h4 className="font-bold text-gray-900 text-xs mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                    {resource.title}
+                                  </h4>
+                                  
+                                  {/* Description */}
+                                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-2">
+                                    {resource.description}
+                                  </p>
+
+                                  {/* Tags */}
+                                  {resource.tags && resource.tags.length > 0 && (
+                                    <div className="mb-2">
+                                      <div className="flex flex-wrap gap-1">
+                                        {resource.tags.slice(0, 3).map(tag => (
+                                          <span
+                                            key={tag.tag_id}
+                                            className={`px-2 py-1 text-xs font-medium rounded-full border ${getTagColor(tag.tag_id)}`}
+                                          >
+                                            {tag.tag_name}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Author and Date */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {resource.author_name?.toString().slice(0, 1) || 'A'}
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-medium text-gray-900">Admin</p>
+                                        <p className="text-xs text-gray-500">{new Date(resource.created_at).toLocaleDateString()}</p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs font-medium text-gray-700">{resource.subject_name}</p>
+                                    </div>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center justify-between">
+                                    {contentMode === 'view' ? (
+                                      <button
+                                        onClick={() => openResourceViewModal(resource)}
+                                        className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        <span>View</span>
+                                      </button>
+                                    ) : (
+                                      <div className="flex items-center space-x-1">
+                                        <button
+                                          onClick={() => openResourceEditModal(resource)}
+                                          className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-xs"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                          <span>Edit</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteResource(resource.resource_id)}
+                                          className="flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                          <span>Delete</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {resource.type_name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {resource.subject_name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {resource.grade_level}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                resource.status === 'published' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {resource.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex items-center justify-center">
-                                <span title="Downloads" className="flex items-center space-x-1">
-                                  <Download className="w-4 h-4" />
-                                  <span>{resource.download_count || 0}</span>
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(resource.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-2">
-                                <button 
-                                  onClick={() => openResourceViewModal(resource)}
-                                  className="text-blue-600 hover:text-blue-900" 
-                                  title="View"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button 
-                                  onClick={() => openResourceEditModal(resource)}
-                                  className="text-green-600 hover:text-green-900" 
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteResource(resource.resource_id)}
-                                  className="text-red-600 hover:text-red-900" 
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  // Grid View
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {filteredResources.map((resource) => (
-                        <div key={resource.resource_id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                          {/* Preview Image */}
-                          <div className="aspect-[3/2] bg-gray-100 relative overflow-hidden">
-                            <img
-                              src={getPreviewImage(resource)}
-                              alt={resource.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = '/logo.png';
-                              }}
-                            />
-                            <div className="absolute top-2 right-2">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                resource.status === 'published' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {resource.status}
-                              </span>
-                            </div>
-                          </div>
+                            );
+                          })}
                           
-                          {/* Content */}
-                          <div className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-2">
-                                  {(() => {
-                                    const IconComponent = getFileIcon(resource.type_name);
-                                    return <IconComponent className="w-4 h-4 text-blue-600" />;
-                                  })()}
-                                </div>
-                                <span className="text-xs text-gray-500">{resource.type_name}</span>
+                          {/* Add Resource Card - Always shown in Edit mode */}
+                          {contentMode === 'edit' && (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+                                 onClick={() => {
+                                   setSelectedGrade(grade);
+                                   setShowResourceModal(true);
+                                 }}>
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <span className="text-blue-600 font-bold text-lg">+</span>
                               </div>
-                              <span className="text-xs text-gray-500">{formatFileSize(resource.file_size)}</span>
+                              <p className="text-xs font-medium text-gray-700">Add Resource</p>
+                              <p className="text-xs text-gray-500 mt-1">Add to {grade.grade_level}</p>
                             </div>
-                            
-                            <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{resource.title}</h3>
-                            
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                              <div className="flex items-center">
-                              <div 
-                                  className="w-2 h-2 rounded-full mr-1" 
-                                  style={{ backgroundColor: '#FF0000' }}
-                                ></div>
-                                <span className='text-gray-500 text-md'>{resource.subject_name}</span>
-                              </div>
-                              <span>{resource.grade_level}</span>
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs text-gray-500">
-                                                          <div className="flex items-center justify-center">
-                              <span title="Downloads" className="flex items-center space-x-1">
-                                <Download className="w-3 h-3" />
-                                <span>{resource.download_count || 0}</span>
-                              </span>
-                            </div>
-                              <div className="flex items-center space-x-1">
-                                <button 
-                                  onClick={() => openResourceViewModal(resource)}
-                                  className="text-blue-600 hover:text-blue-900 p-1" 
-                                  title="View"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                </button>
-                                <button 
-                                  onClick={() => openResourceEditModal(resource)}
-                                  className="text-green-600 hover:text-green-900 p-1" 
-                                  title="Edit"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteResource(resource.resource_id)}
-                                  className="text-red-600 hover:text-red-900 p-1" 
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="text-center py-12">
-                  <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
-                  <p className="text-gray-600 mb-4">Upload your first resource to get started.</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              // Empty State
+              <div className="text-center py-12">
+                <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-2xl text-gray-400">🔍</span>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
+                <p className="text-gray-600 mb-4">
+                  {resourceSearchTerm || filterResourceStatus !== 'all' || filterGrade !== 'all' || filterSubject !== 'all'
+                    ? "Try adjusting your search terms or filters."
+                    : "No resources are available yet. Upload your first resource to get started!"
+                  }
+                </p>
+                {resourceSearchTerm || filterResourceStatus !== 'all' || filterGrade !== 'all' || filterSubject !== 'all' ? (
+                  <button
+                    onClick={() => {
+                      setResourceSearchTerm('');
+                      setFilterResourceStatus('all');
+                      setFilterGrade('all');
+                      setFilterSubject('all');
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                ) : (
                   <button
                     onClick={() => setShowResourceModal(true)}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Upload Your First Resource
                   </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1592,8 +1725,12 @@ const AdminDashboard: React.FC = () => {
       {/* Add Resource Modal */}
       <AddResourceModal
         isOpen={showResourceModal}
-        onClose={() => setShowResourceModal(false)}
+        onClose={() => {
+          setShowResourceModal(false);
+          setSelectedGrade(null); // Reset selected grade when closing
+        }}
         onSubmit={handleCreateResource}
+        initialGrade={selectedGrade?.grade_number}
       />
 
       {/* Grade Modal */}
@@ -1646,6 +1783,7 @@ const AdminDashboard: React.FC = () => {
         }}
         formatFileSize={formatFileSize}
         formatDate={(dateString) => new Date(dateString).toLocaleDateString()}
+        downloadProgress={downloadProgress}
       />
 
       {/* Resource Edit Modal */}

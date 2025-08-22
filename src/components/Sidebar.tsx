@@ -52,16 +52,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       description: 'Manage school accounts and access'
     },
     {
-      id: 'content',
-      label: 'Content Management',
-      icon: BookOpen,
-      description: 'Create and manage educational resources'
-    },
-    {
       id: 'metadata',
       label: 'Metadata',
       icon: Tag,
       description: 'Manage grades, subjects, and tags'
+    },
+    {
+      id: 'content',
+      label: 'Content Management',
+      icon: BookOpen,
+      description: 'Create and manage educational resources'
     }
   ];
 

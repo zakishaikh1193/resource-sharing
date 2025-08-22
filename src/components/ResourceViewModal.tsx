@@ -31,6 +31,12 @@ interface ResourceViewModalProps {
   getTypeName: (typeId: number) => string;
   formatFileSize: (bytes: number) => string;
   formatDate: (dateString: string) => string;
+  downloadProgress: {
+    isDownloading: boolean;
+    progress: number;
+    fileName: string;
+    showSuccess: boolean;
+  };
 }
 
 const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
@@ -42,7 +48,8 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
   getGradeLevel,
   getTypeName,
   formatFileSize,
-  formatDate
+  formatDate,
+  downloadProgress
 }) => {
   if (!isOpen || !resource) return null;
 
@@ -200,6 +207,48 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                    </div>
                  )}
 
+                 {/* Download Progress */}
+                 {downloadProgress.isDownloading && (
+                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                     <div className="flex items-center space-x-3 mb-3">
+                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                         <Download className="w-4 h-4 text-blue-600 animate-pulse" />
+                       </div>
+                       <div>
+                         <h4 className="font-semibold text-blue-900">Downloading File</h4>
+                         <p className="text-sm text-blue-700 truncate">{downloadProgress.fileName}</p>
+                       </div>
+                     </div>
+                     
+                     {/* Progress Bar */}
+                     <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+                       <div 
+                         className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                         style={{ width: `${downloadProgress.progress}%` }}
+                       ></div>
+                     </div>
+                     
+                     <p className="text-sm text-blue-600 font-medium">{downloadProgress.progress}% Complete</p>
+                   </div>
+                 )}
+                 
+                 {/* Download Success Message */}
+                 {downloadProgress.showSuccess && (
+                   <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                     <div className="flex items-center space-x-3">
+                       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                         <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                         </svg>
+                       </div>
+                       <div>
+                         <h4 className="font-semibold text-green-900">Download Complete!</h4>
+                         <p className="text-sm text-green-700 truncate">{downloadProgress.fileName}</p>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+
                  {/* Actions */}
                  <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
                    <button
@@ -210,10 +259,15 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                    </button>
                    <button
                      onClick={() => onDownload(resource)}
-                     className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                     disabled={downloadProgress.isDownloading}
+                     className={`flex items-center space-x-2 px-6 py-3 rounded-xl transition-all duration-200 font-semibold shadow-lg transform ${
+                       downloadProgress.isDownloading
+                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                         : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:scale-105'
+                     }`}
                    >
                      <Download className="w-4 h-4" />
-                     <span>Download Resource</span>
+                     <span>{downloadProgress.isDownloading ? 'Downloading...' : 'Download Resource'}</span>
                    </button>
                  </div>
                </div>
