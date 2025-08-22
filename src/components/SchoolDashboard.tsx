@@ -21,7 +21,10 @@ import {
   LogOut,
   User,
   School,
-  Check
+  Check,
+  Plus,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 
 interface Resource {
@@ -45,7 +48,6 @@ interface Resource {
 
 interface FilterState {
   subjects: number[];
-  grades: number[];
   types: number[];
 }
 
@@ -138,11 +140,9 @@ const SchoolDashboard: React.FC = () => {
   const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     subjects: [],
-    grades: [],
     types: []
   });
   
@@ -155,6 +155,9 @@ const SchoolDashboard: React.FC = () => {
   const [availableGrades, setAvailableGrades] = useState<Array<{grade_id: number, grade_level: string}>>([]);
   const [availableTypes, setAvailableTypes] = useState<Array<{type_id: number, type_name: string}>>([]);
   const [availableTags, setAvailableTags] = useState<Array<{tag_id: number, tag_name: string}>>([]);
+
+  // Kanban scroll state
+  const kanbanRef = useRef<HTMLDivElement>(null);
 
   // Fetch resources and metadata
   useEffect(() => {
@@ -242,13 +245,9 @@ const SchoolDashboard: React.FC = () => {
     if (filters.subjects.length > 0) {
       filtered = filtered.filter(resource => filters.subjects.includes(resource.subject_id));
     }
-    if (filters.grades.length > 0) {
-      filtered = filtered.filter(resource => filters.grades.includes(resource.grade_id));
-    }
     if (filters.types.length > 0) {
       filtered = filtered.filter(resource => filters.types.includes(resource.type_id));
     }
-
 
     setFilteredResources(filtered);
   };
@@ -263,7 +262,7 @@ const SchoolDashboard: React.FC = () => {
   };
 
   const clearAllFilters = () => {
-    setFilters({ subjects: [], grades: [], types: [] });
+    setFilters({ subjects: [], types: [] });
     setSearchTerm('');
   };
 
@@ -353,6 +352,20 @@ const SchoolDashboard: React.FC = () => {
     return availableTypes.find(t => t.type_id === typeId)?.type_name || 'Unknown';
   };
 
+  // Get resources for a specific grade
+  const getResourcesForGrade = (gradeId: number) => {
+    return filteredResources.filter(resource => resource.grade_id === gradeId);
+  };
+
+  // Scroll Kanban board
+  const scrollKanban = (direction: 'left' | 'right') => {
+    if (kanbanRef.current) {
+      const scrollAmount = 400;
+      const newScrollLeft = kanbanRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      kanbanRef.current.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -406,7 +419,7 @@ const SchoolDashboard: React.FC = () => {
             Welcome back, {user?.name}!
           </h2>
           <p className="text-sm sm:text-base text-gray-600">
-            Discover and download educational resources shared by the admin.
+            Discover and download educational resources organized by grade levels.
           </p>
         </div>
 
@@ -464,33 +477,8 @@ const SchoolDashboard: React.FC = () => {
               />
             </div>
 
-            {/* Controls Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 sm:space-x-4">
-              {/* View Mode Toggle */}
-              <div className="flex items-center justify-center sm:justify-start space-x-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Grid3X3 className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <List className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </div>
-
-              {/* Filter Toggle */}
+            {/* Filter Toggle */}
+            <div className="flex items-center justify-between">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base ${
@@ -535,8 +523,6 @@ const SchoolDashboard: React.FC = () => {
                     let displayName = '';
                     if (category === 'subjects') {
                       displayName = availableSubjects.find(s => s.subject_id === value)?.subject_name || '';
-                    } else if (category === 'grades') {
-                      displayName = availableGrades.find(g => g.grade_id === value)?.grade_level || '';
                     } else if (category === 'types') {
                       displayName = availableTypes.find(t => t.type_id === value)?.type_name || '';
                     }
@@ -564,7 +550,7 @@ const SchoolDashboard: React.FC = () => {
           {/* Filter Options */}
           {showFilters && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {/* Subjects Filter */}
                 <MultiSelect
                   options={availableSubjects.map(s => ({ id: s.subject_id, name: s.subject_name }))}
@@ -572,15 +558,6 @@ const SchoolDashboard: React.FC = () => {
                   onSelectionChange={(values) => setFilters(prev => ({ ...prev, subjects: values }))}
                   placeholder="Select subjects..."
                   label="Subjects"
-                />
-
-                {/* Grades Filter */}
-                <MultiSelect
-                  options={availableGrades.map(g => ({ id: g.grade_id, name: g.grade_level }))}
-                  selectedValues={filters.grades}
-                  onSelectionChange={(values) => setFilters(prev => ({ ...prev, grades: values }))}
-                  placeholder="Select grade levels..."
-                  label="Grade Levels"
                 />
 
                 {/* Types Filter */}
@@ -603,240 +580,163 @@ const SchoolDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Resources Grid/List */}
+        {/* Kanban Board */}
         {filteredResources.length > 0 ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6' : 'space-y-4'}>
-                         {filteredResources.map((resource) => {
-               const typeName = availableTypes.find(t => t.type_id === resource.type_id)?.type_name || 'Unknown';
-               const IconComponent = getFileIcon(typeName);
-              
-              return viewMode === 'grid' ? (
-                                 // Grid View
-                 <div key={resource.resource_id} className="group bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1">
-                   {/* Preview Image */}
-                   <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-                     <img
-                       src={getPreviewImage(resource)}
-                       alt={resource.title}
-                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                       onError={(e) => {
-                         const target = e.target as HTMLImageElement;
-                         target.style.display = 'none';
-                         target.parentElement!.innerHTML = `
-                           <div class="w-full h-full flex items-center justify-center">
-                             <div class="w-16 h-16 sm:w-20 sm:h-20 text-gray-300">
-                               <svg fill="currentColor" viewBox="0 0 24 24">
-                                 <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                               </svg>
-                             </div>
-                           </div>
-                         `;
-                       }}
-                     />
-                     {/* Overlay with file type icon */}
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                       <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 backdrop-blur-sm rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
-                         <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
-                       </div>
-                     </div>
-                     {/* File size badge */}
-                     <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
-                       <div className="px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-lg">
-                         {formatFileSize(resource.file_size)}
-                       </div>
-                     </div>
-                   </div>
+          <div className="relative">
+            {/* Scroll Controls */}
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10">
+              <button
+                onClick={() => scrollKanban('left')}
+                className="w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
+              <button
+                onClick={() => scrollKanban('right')}
+                className="w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              >
+                <ArrowRight className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
 
-                   {/* Content */}
-                   <div className="p-4 sm:p-6">
-                     {/* Title and Description */}
-                     <div className="mb-3 sm:mb-4">
-                       <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                         {resource.title}
-                       </h3>
-                       <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                         {resource.description}
-                       </p>
-                     </div>
+            {/* Kanban Board */}
+            <div 
+              ref={kanbanRef}
+              className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {availableGrades.map((grade) => {
+                const gradeResources = getResourcesForGrade(grade.grade_id);
+                const gradeColor = getGradeColor(grade.grade_id);
+                
+                return (
+                  <div key={grade.grade_id} className="flex-shrink-0 w-80 sm:w-96">
+                    {/* Grade Column Header */}
+                    <div className={`${gradeColor.bg} ${gradeColor.border} rounded-t-xl p-4 mb-4`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{grade.grade_level}</h3>
+                          <p className="text-sm text-white/80">{gradeResources.length} resources</p>
+                        </div>
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
 
-                     {/* Metadata Grid */}
-                     <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-                       <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                         <div className="flex-1 min-w-0">
-                           <p className="text-xs text-gray-500 font-medium">Subject</p>
-                           <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                             {availableSubjects.find(s => s.subject_id === resource.subject_id)?.subject_name || 'Not specified'}
-                           </p>
-                         </div>
-                       </div>
-                       <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                         <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                         <div className="flex-1 min-w-0">
-                           <p className="text-xs text-gray-500 font-medium">Grade</p>
-                           <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                             {availableGrades.find(g => g.grade_id === resource.grade_id)?.grade_level || 'Not specified'}
-                           </p>
-                         </div>
-                       </div>
-                     </div>
+                    {/* Resources in this grade */}
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {gradeResources.map((resource) => {
+                        const typeName = availableTypes.find(t => t.type_id === resource.type_id)?.type_name || 'Unknown';
+                        const IconComponent = getFileIcon(typeName);
+                        
+                        return (
+                          <div 
+                            key={resource.resource_id} 
+                            className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1"
+                          >
+                            {/* Preview Image */}
+                            <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+                              <img
+                                src={getPreviewImage(resource)}
+                                alt={resource.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.parentElement!.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center">
+                                      <div class="w-12 h-12 text-gray-300">
+                                        <svg fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  `;
+                                }}
+                              />
+                              {/* File type icon overlay */}
+                              <div className="absolute top-2 left-2">
+                                <div className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-lg">
+                                  <IconComponent className="w-4 h-4 text-gray-700" />
+                                </div>
+                              </div>
+                              {/* File size badge */}
+                              <div className="absolute top-2 right-2">
+                                <div className="px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded-lg">
+                                  {formatFileSize(resource.file_size)}
+                                </div>
+                              </div>
+                            </div>
 
-                     {/* Tags */}
-                     {resource.tags && resource.tags.length > 0 && (
-                       <div className="mb-3 sm:mb-4">
-                         <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                           {resource.tags.slice(0, 2).map(tag => (
-                             <span
-                               key={tag.tag_id}
-                               className="px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100"
-                             >
-                               {tag.tag_name}
-                             </span>
-                           ))}
-                           {resource.tags.length > 2 && (
-                             <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-full border border-gray-200">
-                               +{resource.tags.length - 2}
-                             </span>
-                           )}
-                         </div>
-                       </div>
-                     )}
+                            {/* Content */}
+                            <div className="p-4">
+                              {/* Title and Description */}
+                              <div className="mb-3">
+                                <h4 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                  {resource.title}
+                                </h4>
+                                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                                  {resource.description}
+                                </p>
+                              </div>
 
-                     {/* Action Button */}
-                     <div className="pt-3 sm:pt-4 border-t border-gray-100">
-                       <button
-                         onClick={() => handleViewResource(resource)}
-                         className="w-full flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] text-sm sm:text-base"
-                       >
-                         <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                         <span>View Details</span>
-                       </button>
-                     </div>
-                   </div>
-                 </div>
-              ) : (
-                                 // List View
-                 <div key={resource.resource_id} className="group bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
-                   <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
-                     {/* Preview Image */}
-                     <div className="relative flex-shrink-0 self-center sm:self-start">
-                       <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm">
-                         <img
-                           src={getPreviewImage(resource)}
-                           alt={resource.title}
-                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                           onError={(e) => {
-                             const target = e.target as HTMLImageElement;
-                             target.style.display = 'none';
-                             target.parentElement!.innerHTML = `
-                               <div class="w-full h-full flex items-center justify-center">
-                                 <div class="w-8 h-8 sm:w-12 sm:h-12 text-gray-300">
-                                   <svg fill="currentColor" viewBox="0 0 24 24">
-                                     <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                                   </svg>
-                                 </div>
-                               </div>
-                             `;
-                           }}
-                         />
-                       </div>
-                       {/* File type icon overlay */}
-                       <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center shadow-lg border border-gray-100">
-                         <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-                       </div>
-                     </div>
+                              {/* Subject */}
+                              <div className="mb-3">
+                                <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-gray-500 font-medium">Subject</p>
+                                    <p className="text-xs font-semibold text-gray-900 truncate">
+                                      {availableSubjects.find(s => s.subject_id === resource.subject_id)?.subject_name || 'Not specified'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
 
-                     {/* Content */}
-                     <div className="flex-1 min-w-0">
-                       {/* Header */}
-                       <div className="flex items-start justify-between mb-3 sm:mb-4">
-                         <div className="flex-1 min-w-0">
-                           <h3 className="font-bold text-gray-900 text-lg sm:text-xl mb-2 group-hover:text-blue-600 transition-colors">
-                             {resource.title}
-                           </h3>
-                           <p className="text-sm sm:text-base text-gray-600 leading-relaxed line-clamp-2">
-                             {resource.description}
-                           </p>
-                         </div>
-                       </div>
+                              {/* Tags */}
+                              {resource.tags && resource.tags.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="flex flex-wrap gap-1">
+                                    {resource.tags.slice(0, 2).map(tag => (
+                                      <span
+                                        key={tag.tag_id}
+                                        className="px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100"
+                                      >
+                                        {tag.tag_name}
+                                      </span>
+                                    ))}
+                                    {resource.tags.length > 2 && (
+                                      <span className="px-2 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-full border border-gray-200">
+                                        +{resource.tags.length - 2}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
-                       {/* Metadata Grid */}
-                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
-                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg sm:rounded-xl border border-green-100">
-                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
-                           <div>
-                             <p className="text-xs text-green-600 font-semibold">Subject</p>
-                             <p className="text-xs sm:text-sm font-bold text-gray-900">
-                               {availableSubjects.find(s => s.subject_id === resource.subject_id)?.subject_name || 'Not specified'}
-                             </p>
-                           </div>
-                         </div>
-                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg sm:rounded-xl border border-purple-100">
-                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-purple-500 rounded-full"></div>
-                           <div>
-                             <p className="text-xs text-purple-600 font-semibold">Grade</p>
-                             <p className="text-xs sm:text-sm font-bold text-gray-900">
-                               {availableGrades.find(g => g.grade_id === resource.grade_id)?.grade_level || 'Not specified'}
-                             </p>
-                           </div>
-                         </div>
-                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg sm:rounded-xl border border-blue-100">
-                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full"></div>
-                           <div>
-                             <p className="text-xs text-blue-600 font-semibold">Size</p>
-                             <p className="text-xs sm:text-sm font-bold text-gray-900">{formatFileSize(resource.file_size)}</p>
-                           </div>
-                         </div>
-                         <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg sm:rounded-xl border border-orange-100">
-                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded-full"></div>
-                           <div>
-                             <p className="text-xs text-orange-600 font-semibold">Added</p>
-                             <p className="text-xs sm:text-sm font-bold text-gray-900">{formatDate(resource.created_at)}</p>
-                           </div>
-                         </div>
-                       </div>
-
-                       {/* Tags */}
-                       {resource.tags && resource.tags.length > 0 && (
-                         <div className="mb-4 sm:mb-6">
-                           <div className="flex flex-wrap gap-1 sm:gap-2">
-                             {resource.tags.slice(0, 4).map(tag => (
-                               <span
-                                 key={tag.tag_id}
-                                 className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs sm:text-sm font-medium rounded-full border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
-                               >
-                                 {tag.tag_name}
-                               </span>
-                             ))}
-                             {resource.tags.length > 4 && (
-                               <span className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-full border border-gray-200">
-                                 +{resource.tags.length - 4}
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                       )}
-
-                       {/* Actions */}
-                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 sm:pt-4 border-t border-gray-100 space-y-3 sm:space-y-0">
-                         <div className="flex items-center justify-center sm:justify-start space-x-2 text-xs sm:text-sm text-gray-500">
-                           <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                           <span>By Admin</span>
-                         </div>
-                         <button
-                           onClick={() => handleViewResource(resource)}
-                           className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-105 text-sm sm:text-base"
-                         >
-                           <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                           <span>View Details</span>
-                         </button>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-              );
-            })}
+                              {/* Action Button */}
+                              <div className="pt-3 border-t border-gray-100">
+                                <button
+                                  onClick={() => handleViewResource(resource)}
+                                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] text-sm"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>View Details</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           // Empty State
@@ -860,23 +760,43 @@ const SchoolDashboard: React.FC = () => {
               </button>
             )}
           </div>
-                 )}
-       </main>
+        )}
+      </main>
 
-       {/* Resource View Modal */}
-       <ResourceViewModal
-         isOpen={isViewModalOpen}
-         onClose={handleCloseViewModal}
-         resource={selectedResource}
-         onDownload={handleDownload}
-         getSubjectName={getSubjectName}
-         getGradeLevel={getGradeLevel}
-         getTypeName={getTypeName}
-         formatFileSize={formatFileSize}
-         formatDate={formatDate}
-       />
-     </div>
-   );
- };
+      {/* Resource View Modal */}
+      <ResourceViewModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        resource={selectedResource}
+        onDownload={handleDownload}
+        getSubjectName={getSubjectName}
+        getGradeLevel={getGradeLevel}
+        getTypeName={getTypeName}
+        formatFileSize={formatFileSize}
+        formatDate={formatDate}
+      />
+    </div>
+  );
+};
+
+// Helper function to get grade colors
+const getGradeColor = (gradeId: number) => {
+  const colors = [
+    { bg: 'bg-blue-500', border: 'border-blue-500' },
+    { bg: 'bg-green-500', border: 'border-green-500' },
+    { bg: 'bg-purple-500', border: 'border-purple-500' },
+    { bg: 'bg-yellow-500', border: 'border-yellow-500' },
+    { bg: 'bg-red-500', border: 'border-red-500' },
+    { bg: 'bg-indigo-500', border: 'border-indigo-500' },
+    { bg: 'bg-pink-500', border: 'border-pink-500' },
+    { bg: 'bg-orange-500', border: 'border-orange-500' },
+    { bg: 'bg-teal-500', border: 'border-teal-500' },
+    { bg: 'bg-cyan-500', border: 'border-cyan-500' },
+    { bg: 'bg-emerald-500', border: 'border-emerald-500' },
+    { bg: 'bg-violet-500', border: 'border-violet-500' }
+  ];
+  
+  return colors[gradeId % colors.length];
+};
 
 export default SchoolDashboard;

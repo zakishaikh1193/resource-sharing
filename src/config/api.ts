@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://resources.bylinelms.com/api';;
+const API_BASE_URL ='https://resources.bylinelms.com/api';;
 
 export const API_ENDPOINTS = {
   // Auth endpoints
