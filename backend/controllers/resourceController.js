@@ -503,19 +503,17 @@ const getResourceById = async (req, res) => {
       [id]
     );
 
-    // Record view if user is authenticated
-    if (req.user) {
-      await pool.execute(
-        'INSERT INTO resource_views (resource_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)',
-        [id, req.user.user_id, req.ip, req.get('User-Agent')]
-      );
+    // Record view (for both authenticated and anonymous users)
+    await pool.execute(
+      'INSERT INTO resource_views (resource_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+      [id, req.user?.user_id || null, req.ip, req.get('User-Agent')]
+    );
 
-      // Update view count
-      await pool.execute(
-        'UPDATE resources SET view_count = view_count + 1 WHERE resource_id = ?',
-        [id]
-      );
-    }
+    // Update view count
+    await pool.execute(
+      'UPDATE resources SET view_count = view_count + 1 WHERE resource_id = ?',
+      [id]
+    );
 
     res.json({
       success: true,
@@ -759,19 +757,17 @@ const downloadResource = async (req, res) => {
       });
     }
 
-    // Record download
-    if (req.user) {
-      await pool.execute(
-        'INSERT INTO resource_downloads (resource_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)',
-        [id, req.user.user_id, req.ip, req.get('User-Agent')]
-      );
+    // Record download (for both authenticated and anonymous users)
+    await pool.execute(
+      'INSERT INTO resource_downloads (resource_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+      [id, req.user?.user_id || null, req.ip, req.get('User-Agent')]
+    );
 
-      // Update download count
-      await pool.execute(
-        'UPDATE resources SET download_count = download_count + 1 WHERE resource_id = ?',
-        [id]
-      );
-    }
+    // Update download count
+    await pool.execute(
+      'UPDATE resources SET download_count = download_count + 1 WHERE resource_id = ?',
+      [id]
+    );
 
     // Log activity
     await pool.execute(
