@@ -37,8 +37,8 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 via-blue-50 to-blue-200 flex items-center justify-center p-4">
       {/* Main Container */}
-      <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full h-[600px] overflow-hidden">
-        <div className="flex">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full h-[700px] overflow-hidden flex flex-col">
+        <div className="flex flex-1">
           {/* Left Section - Login Form */}
                      <div className="flex-1 p-10 lg:p-16">
             {/* Header */}
@@ -116,7 +116,7 @@ const LoginPage: React.FC = () => {
                      {/* Right Section - Login Image */}
            <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
              <img 
-               src="/src/assets/login.jpg" 
+               src="/login.jpg" 
                alt="Login" 
                className="w-full h-full object-cover"
              />
@@ -124,7 +124,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Footer */}
-                 <div className="px-10 lg:px-16 py-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
+                 <div className="px-10 lg:px-16 py-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500 mt-auto">
           <span>Copyright @Byline Learning Solutions 2025</span>
           <div className="flex space-x-2">
             <div className="w-3 h-3 bg-pink-400 rounded-full"></div>

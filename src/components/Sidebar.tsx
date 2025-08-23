@@ -13,13 +13,14 @@ import {
   Shield,
   LogOut,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
-  activeTab: 'overview' | 'users' | 'content' | 'metadata';
-  onTabChange: (tab: 'overview' | 'users' | 'content' | 'metadata') => void;
+  activeTab: 'overview' | 'users' | 'content' | 'metadata' | 'settings';
+  onTabChange: (tab: 'overview' | 'users' | 'content' | 'metadata' | 'settings') => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -34,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems: Array<{
-    id: 'overview' | 'users' | 'content' | 'metadata';
+    id: 'overview' | 'users' | 'content' | 'metadata' | 'settings';
     label: string;
     icon: any;
     description: string;
@@ -62,10 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'Content Management',
       icon: BookOpen,
       description: 'Create and manage educational resources'
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      description: 'Profile management and admin settings'
     }
   ];
 
-  const handleTabClick = (tabId: 'overview' | 'users' | 'content' | 'metadata') => {
+  const handleTabClick = (tabId: 'overview' | 'users' | 'content' | 'metadata' | 'settings') => {
     onTabChange(tabId);
     setIsMobileMenuOpen(false);
   };

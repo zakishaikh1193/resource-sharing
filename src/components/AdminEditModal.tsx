@@ -1,28 +1,47 @@
-import React, { useState } from 'react';
-import { X, UserPlus, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Mail, Building, Phone, MapPin, Shield, UserPlus } from 'lucide-react';
 
-interface CreateSchoolModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: any) => Promise<{ success: boolean; message: string }>;
+interface User {
+  user_id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'school';
+  organization?: string;
+  designation?: string;
+  phone?: string;
+  address?: string;
+  status: string;
+  created_at: string;
 }
 
-const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, onSubmit }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    organization: '',
-    designation: '',
-    phone: '',
-    address: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
+interface AdminEditModalProps {
+  admin: User | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: (updatedAdmin: User) => void;
+}
+
+const AdminEditModal: React.FC<AdminEditModalProps> = ({ admin, isOpen, onClose, onUpdate }) => {
+  const [formData, setFormData] = useState<Partial<User>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    if (admin) {
+      setFormData({
+        name: admin.name,
+        email: admin.email,
+        organization: admin.organization || '',
+        designation: admin.designation || '',
+        phone: admin.phone || '',
+        address: admin.address || '',
+        status: admin.status
+      });
+    }
+  }, [admin]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     // Special handling for phone number
@@ -46,19 +65,15 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!admin) return;
+
     setError('');
     setSuccess('');
     setIsLoading(true);
 
     // Basic validation
-    if (!formData.name || !formData.email || !formData.password || !formData.organization) {
+    if (!formData.name || !formData.email || !formData.organization) {
       setError('Please fill in all required fields');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
       setIsLoading(false);
       return;
     }
@@ -80,27 +95,19 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
     }
 
     try {
-      const result = await onSubmit(formData);
-      if (result.success) {
-        setSuccess(result.message);
-        setFormData({
-          name: '',
-          email: '',
-          password: '',
-          organization: '',
-          designation: '',
-          phone: '',
-          address: ''
-        });
-        setTimeout(() => {
-          onClose();
-          setSuccess('');
-        }, 2000);
-      } else {
-        setError(result.message);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
+      const updatedAdmin: User = {
+        ...admin,
+        ...formData
+      };
+      await onUpdate(updatedAdmin);
+      setSuccess('Admin updated successfully!');
+      setTimeout(() => {
+        onClose();
+        setSuccess('');
+      }, 2000);
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      setError('Failed to update admin. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -108,35 +115,26 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
 
   const handleClose = () => {
     if (!isLoading) {
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        organization: '',
-        designation: '',
-        phone: '',
-        address: ''
-      });
       setError('');
       setSuccess('');
       onClose();
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !admin) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
               <UserPlus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Create School Account</h2>
-              <p className="text-sm text-gray-600 font-medium">Add a new school to the platform</p>
+              <h2 className="text-2xl font-bold text-gray-900">Edit Admin Account</h2>
+              <p className="text-sm text-gray-600 font-medium">Update admin information</p>
             </div>
           </div>
           <button
@@ -197,14 +195,14 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
                   type="text"
                   id="name"
                   name="name"
-                  value={formData.name}
+                  value={formData.name || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   placeholder="Enter contact person name"
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                 </div>
               </div>
             </div>
@@ -218,55 +216,40 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
                   type="email"
                   id="email"
                   name="email"
-                  value={formData.email}
+                  value={formData.email || ''}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   placeholder="Enter email address"
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Password */}
+          {/* Status */}
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-              Password *
+            <label htmlFor="status" className="block text-sm font-semibold text-gray-700">
+              Account Status *
             </label>
             <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                value={formData.password}
+              <select
+                id="status"
+                name="status"
+                value={formData.status || 'active'}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-4 pr-12 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-                placeholder="Enter password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex space-x-1">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      formData.password.length >= i ? 'bg-green-500' : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="banned">Banned</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
               </div>
-              <p className="text-xs text-gray-500">Minimum 6 characters</p>
             </div>
           </div>
 
@@ -280,14 +263,14 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
                 type="text"
                 id="organization"
                 name="organization"
-                value={formData.organization}
+                value={formData.organization || ''}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                 placeholder="Enter school or organization name"
               />
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
               </div>
             </div>
           </div>
@@ -303,9 +286,9 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
                   type="text"
                   id="designation"
                   name="designation"
-                  value={formData.designation}
+                  value={formData.designation || ''}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   placeholder="e.g., Principal, ICT Coordinator"
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -323,10 +306,10 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
                   type="tel"
                   id="phone"
                   name="phone"
-                  value={formData.phone}
+                  value={formData.phone || ''}
                   onChange={handleInputChange}
                   maxLength={20}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   placeholder="e.g., +1 (555) 123-4567"
                 />
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -346,10 +329,10 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
               <textarea
                 id="address"
                 name="address"
-                value={formData.address}
+                value={formData.address || ''}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
                 placeholder="Enter school address"
               />
               <div className="absolute top-4 right-4 pointer-events-none">
@@ -371,19 +354,19 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
             <button
               type="submit"
               disabled={isLoading}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 font-medium shadow-lg transform hover:scale-105"
+              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 font-medium shadow-lg transform hover:scale-105"
             >
-                              {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                    <span>Creating School...</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-5 h-5" />
-                    <span>Create School</span>
-                  </>
-                )}
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Updating Admin...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  <span>Update Admin</span>
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -392,5 +375,4 @@ const CreateSchoolModal: React.FC<CreateSchoolModalProps> = ({ isOpen, onClose, 
   );
 };
 
-export default CreateSchoolModal;
-
+export default AdminEditModal;

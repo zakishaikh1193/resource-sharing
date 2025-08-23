@@ -2,12 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Users, Shield, Search, Edit, Trash2, Eye, BookOpen, FileText, BarChart3, UserPlus, Upload, Download, Tag, Grid3X3, List, Video, Image, Archive, Music, Presentation, ChevronDown, LogOut, User, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CreateSchoolModal from './CreateSchoolModal';
+import CreateAdminModal from './CreateAdminModal';
 import { AddResourceModal } from './AddResourceModal';
+import { ResourceCard } from './ResourceCard';
 import GradeModal from './GradeModal';
 import SubjectModal from './SubjectModal';
 import ResourceViewModal from './ResourceViewModal';
 import ResourceEditModal from './ResourceEditModal';
 import TagModal from './TagModal';
+import SchoolViewModal from './SchoolViewModal';
+import SchoolEditModal from './SchoolEditModal';
+import ProfileEditModal from './ProfileEditModal';
+import AdminViewModal from './AdminViewModal';
+import AdminEditModal from './AdminEditModal';
 import Sidebar from './Sidebar';
 import { API_ENDPOINTS, getFileUrl } from '../config/api';
 
@@ -18,6 +25,8 @@ interface User {
   role: 'admin' | 'school';
   organization?: string;
   designation?: string;
+  phone?: string;
+  address?: string;
   status: string;
   created_at: string;
 }
@@ -77,7 +86,20 @@ const AdminDashboard: React.FC = () => {
   const [tagModalMode, setTagModalMode] = useState<'create' | 'edit'>('create');
   const [selectedTag, setSelectedTag] = useState<any>(null);
   const [showTagModal, setShowTagModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'content' | 'metadata' | 'settings'>('overview');
+  
+  // School management state
+  const [selectedSchool, setSelectedSchool] = useState<User | null>(null);
+  const [showSchoolViewModal, setShowSchoolViewModal] = useState(false);
+  const [showSchoolEditModal, setShowSchoolEditModal] = useState(false);
+  
+  // Settings state
+  const [settingsMode, setSettingsMode] = useState<'profile' | 'admins'>('profile');
+  const [selectedAdmin, setSelectedAdmin] = useState<User | null>(null);
+  const [showAdminViewModal, setShowAdminViewModal] = useState(false);
+  const [showAdminEditModal, setShowAdminEditModal] = useState(false);
+  const [showProfileEditModal, setShowProfileEditModal] = useState(false);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -239,6 +261,190 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // School management functions
+  const handleViewSchool = (school: User) => {
+    setSelectedSchool(school);
+    setShowSchoolViewModal(true);
+  };
+
+  const handleEditSchool = (school: User) => {
+    setSelectedSchool(school);
+    setShowSchoolEditModal(true);
+  };
+
+  const handleDeleteSchool = async (school: User) => {
+    if (!confirm(`Are you sure you want to delete ${school.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${school.user_id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Remove the school from the users list
+        setUsers(users.filter(u => u.user_id !== school.user_id));
+        alert('School deleted successfully');
+      } else {
+        alert('Failed to delete school: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting school:', error);
+      alert('Error deleting school');
+    }
+  };
+
+  const handleUpdateSchool = async (updatedSchool: User) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${updatedSchool.user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedSchool),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Update the school in the users list
+        setUsers(users.map(u => u.user_id === updatedSchool.user_id ? updatedSchool : u));
+        setShowSchoolEditModal(false);
+        setSelectedSchool(null);
+        alert('School updated successfully');
+      } else {
+        alert('Failed to update school: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error updating school:', error);
+      alert('Error updating school');
+    }
+  };
+
+  // Admin management functions
+  const handleViewAdmin = (admin: User) => {
+    setSelectedAdmin(admin);
+    setShowAdminViewModal(true);
+  };
+
+  const handleEditAdmin = (admin: User) => {
+    setSelectedAdmin(admin);
+    setShowAdminEditModal(true);
+  };
+
+  const handleDeleteAdmin = async (admin: User) => {
+    if (!confirm(`Are you sure you want to delete ${admin.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${admin.user_id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Remove the admin from the users list
+        setUsers(users.filter(u => u.user_id !== admin.user_id));
+        alert('Admin deleted successfully');
+      } else {
+        alert('Failed to delete admin: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      alert('Error deleting admin');
+    }
+  };
+
+  const handleUpdateAdmin = async (updatedAdmin: User) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${updatedAdmin.user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedAdmin),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Update the admin in the users list
+        setUsers(users.map(u => u.user_id === updatedAdmin.user_id ? updatedAdmin : u));
+        setShowAdminEditModal(false);
+        setSelectedAdmin(null);
+        alert('Admin updated successfully');
+      } else {
+        alert('Failed to update admin: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      alert('Error updating admin');
+    }
+  };
+
+  const handleUpdateProfile = async (updatedProfile: User) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/${updatedProfile.user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProfile),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Update the profile in the users list
+        setUsers(users.map(u => u.user_id === updatedProfile.user_id ? updatedProfile : u));
+        setShowProfileEditModal(false);
+        alert('Profile updated successfully');
+      } else {
+        alert('Failed to update profile: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Error updating profile');
+    }
+  };
+
+  const handleCreateAdmin = async (adminData: any) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}/admins`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(adminData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Add the new admin to the users list
+        setUsers([...users, data.data]);
+        setShowCreateAdminModal(false);
+        return { success: true, message: 'Admin created successfully!' };
+      } else {
+        return { success: false, message: data.message || 'Failed to create admin' };
+      }
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      return { success: false, message: 'Network error. Please try again.' };
+    }
+  };
+
   const fetchResources = async () => {
     if (!token) return;
     
@@ -265,6 +471,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Filter users based on current tab
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -273,8 +480,22 @@ const AdminDashboard: React.FC = () => {
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
 
+    // In School Management tab, show only schools
+    if (activeTab === 'users') {
+      return user.role === 'school' && matchesSearch && matchesRole && matchesStatus;
+    }
+    
+    // In Settings tab, show only admins
+    if (activeTab === 'settings') {
+      return user.role === 'admin' && matchesSearch && matchesRole && matchesStatus;
+    }
+
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Separate lists for different contexts
+  const schoolUsers = users.filter(user => user.role === 'school');
+  const adminUsers = users.filter(user => user.role === 'admin');
 
   const filteredResources = resources.filter(resource => {
     const searchTerm = resourceSearchTerm.toLowerCase();
@@ -298,6 +519,7 @@ const AdminDashboard: React.FC = () => {
     admins: users.filter(u => u.role === 'admin').length,
     schools: users.filter(u => u.role === 'school').length,
     active: users.filter(u => u.status === 'active').length,
+    activeSchools: users.filter(u => u.role === 'school' && u.status === 'active').length,
     inactive: users.filter(u => u.status === 'inactive').length,
     banned: users.filter(u => u.status === 'banned').length,
   };
@@ -722,6 +944,32 @@ const AdminDashboard: React.FC = () => {
     return colors[tagId % colors.length];
   };
 
+  // Convert backend resource format to ResourceCard format
+  const convertToResourceCardFormat = (resource: Resource) => {
+    return {
+      id: resource.resource_id.toString(),
+      title: resource.title,
+      description: resource.description,
+      type: resource.type_name?.toLowerCase() as 'document' | 'video' | 'presentation' | 'interactive' | 'assessment',
+      subject: resource.subject_name,
+      grade: parseInt(resource.grade_level) || 1,
+      author: {
+        id: '1',
+        name: resource.author_name || 'Admin',
+        avatar: '',
+        subject: resource.subject_name,
+        school: 'Admin School'
+      },
+      createdAt: resource.created_at,
+      tags: resource.tags?.map(tag => tag.tag_name) || [],
+      fileUrl: getFileUrl(resource.file_name),
+      previewImage: getPreviewImage(resource),
+      status: resource.status as 'submitted' | 'review' | 'approved' | 'published',
+      likes: resource.likes || 0,
+      comments: 0
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -825,7 +1073,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Schools</p>
-                    <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+                    <p className="text-3xl font-bold text-green-600">{stats.activeSchools}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <div className="w-3 h-3 bg-green-600 rounded-full"></div>
@@ -1026,13 +1274,14 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 
                 <select
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value as any)}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="all">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="school">School</option>
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="banned">Banned</option>
                 </select>
 
                 <select
@@ -1114,13 +1363,25 @@ const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900">
+                            <button 
+                              onClick={() => handleViewSchool(user)}
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="View Details"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="text-green-600 hover:text-green-900">
+                            <button 
+                              onClick={() => handleEditSchool(user)}
+                              className="text-green-600 hover:text-green-900 transition-colors"
+                              title="Edit School"
+                            >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button className="text-red-600 hover:text-red-900">
+                            <button 
+                              onClick={() => handleDeleteSchool(user)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                              title="Delete School"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -1375,7 +1636,7 @@ const AdminDashboard: React.FC = () => {
                     const gradeColor = getGradeColor(grade.grade_level);
                     
                     return (
-                      <div key={grade.grade_id} className="flex-shrink-0 w-80">
+                      <div key={grade.grade_id} className="flex-shrink-0 w-96">
                         {/* Grade Column Header */}
                         <div className={`${gradeColor.bg} ${gradeColor.border} rounded-t-xl p-4 mb-4`}>
                           <div className="flex items-center justify-between">
@@ -1428,104 +1689,16 @@ const AdminDashboard: React.FC = () => {
                               <p className="text-xs text-gray-500 mt-1">Click to add a new resource</p>
                             </div>
                           )}
-                          {gradeResources.map((resource) => {
-                            const IconComponent = getFileIcon(resource.type_name);
-                            
-                            return (
-                              <div 
-                                key={resource.resource_id} 
-                                className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1"
-                              >
-                                {/* Thumbnail Image */}
-                                <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-                                  <img
-                                    src={getPreviewImage(resource)}
-                                    alt={resource.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-3">
-                                  {/* Title */}
-                                  <h4 className="font-bold text-gray-900 text-xs mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
-                                    {resource.title}
-                                  </h4>
-                                  
-                                  {/* Description */}
-                                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-2">
-                                    {resource.description}
-                                  </p>
-
-                                  {/* Tags */}
-                                  {resource.tags && resource.tags.length > 0 && (
-                                    <div className="mb-2">
-                                      <div className="flex flex-wrap gap-1">
-                                        {resource.tags.slice(0, 3).map(tag => (
-                                          <span
-                                            key={tag.tag_id}
-                                            className={`px-2 py-1 text-xs font-medium rounded-full border ${getTagColor(tag.tag_id)}`}
-                                          >
-                                            {tag.tag_name}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Author and Date */}
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {resource.author_name?.toString().slice(0, 1) || 'A'}
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-medium text-gray-900">Admin</p>
-                                        <p className="text-xs text-gray-500">{new Date(resource.created_at).toLocaleDateString()}</p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-xs font-medium text-gray-700">{resource.subject_name}</p>
-                                    </div>
-                                  </div>
-
-                                  {/* Action Buttons */}
-                                  <div className="flex items-center justify-between">
-                                    {contentMode === 'view' ? (
-                                      <button
-                                        onClick={() => openResourceViewModal(resource)}
-                                        className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs"
-                                      >
-                                        <Eye className="w-3 h-3" />
-                                        <span>View</span>
-                                      </button>
-                                    ) : (
-                                      <div className="flex items-center space-x-1">
-                                        <button
-                                          onClick={() => openResourceEditModal(resource)}
-                                          className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-xs"
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                          <span>Edit</span>
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteResource(resource.resource_id)}
-                                          className="flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                          <span>Delete</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
+                          {gradeResources.map((resource) => (
+                            <ResourceCard
+                              key={resource.resource_id}
+                              resource={convertToResourceCardFormat(resource)}
+                              viewMode={contentMode}
+                              onView={() => openResourceViewModal(resource)}
+                              onEdit={() => openResourceEditModal(resource)}
+                              onDelete={() => handleDeleteResource(resource.resource_id)}
+                            />
+                          ))}
                           
                           {/* Add Resource Card - Always shown in Edit mode */}
                           {contentMode === 'edit' && (
@@ -1711,6 +1884,231 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+                <p className="text-gray-600">Manage your profile and admin accounts</p>
+              </div>
+            </div>
+
+            {/* Settings Navigation */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setSettingsMode('profile')}
+                  className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                    settingsMode === 'profile' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <User className="w-4 h-4 inline mr-2" />
+                  Profile Management
+                </button>
+                <button
+                  onClick={() => setSettingsMode('admins')}
+                  className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                    settingsMode === 'admins' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Shield className="w-4 h-4 inline mr-2" />
+                  Admin Management
+                </button>
+              </div>
+            </div>
+
+            {/* Profile Management */}
+            {settingsMode === 'profile' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900">Your Profile</h3>
+                    <button
+                      onClick={() => setShowProfileEditModal(true)}
+                      className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span>Edit Profile</span>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500">Name</label>
+                        <p className="text-lg font-semibold text-gray-900">{user?.name}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500">Email</label>
+                        <p className="text-lg font-semibold text-gray-900">{user?.email}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500">Role</label>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <Shield className="w-3 h-3 mr-1" />
+                          Admin
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500">Organization</label>
+                        <p className="text-lg font-semibold text-gray-900">{user?.organization || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500">Designation</label>
+                        <p className="text-lg font-semibold text-gray-900">{user?.designation || 'Not specified'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Management */}
+            {settingsMode === 'admins' && (
+              <div className="space-y-6">
+                {/* Header with Add Button */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Admin Accounts</h3>
+                    <button
+                      onClick={() => setShowCreateAdminModal(true)}
+                      className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Add New Admin</span>
+                    </button>
+                  </div>
+                  
+                  {/* Filters */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Search admins..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as any)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="banned">Banned</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Admins Table */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredUsers.map((admin) => (
+                          <tr key={admin.user_id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+                                  {admin.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{admin.name}</div>
+                                  <div className="text-sm text-gray-500">{admin.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {admin.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {admin.organization || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                admin.status === 'active' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : admin.status === 'inactive'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {admin.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(admin.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button 
+                                  onClick={() => handleViewAdmin(admin)}
+                                  className="text-blue-600 hover:text-blue-900 transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleEditAdmin(admin)}
+                                  className="text-green-600 hover:text-green-900 transition-colors"
+                                  title="Edit Admin"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteAdmin(admin)}
+                                  className="text-red-600 hover:text-red-900 transition-colors"
+                                  title="Delete Admin"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {filteredUsers.length === 0 && (
+                    <div className="text-center py-12">
+                      <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No admins found</h3>
+                      <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
 
       </div>
       </div>
@@ -1795,6 +2193,65 @@ const AdminDashboard: React.FC = () => {
         grades={grades}
         subjects={subjects}
         resourceTypes={resourceTypes}
+      />
+
+      {/* School View Modal */}
+      <SchoolViewModal
+        school={selectedSchool}
+        isOpen={showSchoolViewModal}
+        onClose={() => {
+          setShowSchoolViewModal(false);
+          setSelectedSchool(null);
+        }}
+      />
+
+      {/* School Edit Modal */}
+      <SchoolEditModal
+        school={selectedSchool}
+        isOpen={showSchoolEditModal}
+        onClose={() => {
+          setShowSchoolEditModal(false);
+          setSelectedSchool(null);
+        }}
+        onUpdate={handleUpdateSchool}
+      />
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        user={user}
+        isOpen={showProfileEditModal}
+        onClose={() => {
+          setShowProfileEditModal(false);
+        }}
+        onUpdate={handleUpdateProfile}
+      />
+
+      {/* Admin View Modal */}
+      <AdminViewModal
+        admin={selectedAdmin}
+        isOpen={showAdminViewModal}
+        onClose={() => {
+          setShowAdminViewModal(false);
+          setSelectedAdmin(null);
+        }}
+      />
+
+      {/* Admin Edit Modal */}
+      <AdminEditModal
+        admin={selectedAdmin}
+        isOpen={showAdminEditModal}
+        onClose={() => {
+          setShowAdminEditModal(false);
+          setSelectedAdmin(null);
+        }}
+        onUpdate={handleUpdateAdmin}
+      />
+
+      {/* Create Admin Modal */}
+      <CreateAdminModal
+        isOpen={showCreateAdminModal}
+        onClose={() => setShowCreateAdminModal(false)}
+        onSubmit={handleCreateAdmin}
       />
     </div>
   );

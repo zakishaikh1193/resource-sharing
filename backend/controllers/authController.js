@@ -328,6 +328,66 @@ const createSchoolAccount = async (req, res) => {
   }
 };
 
+// Admin: Create admin account
+const createAdminAccount = async (req, res) => {
+  try {
+    const { name, email, password, organization, designation, phone, address } = req.body;
+
+    // Check if user already exists
+    const [existingUsers] = await pool.execute(
+      'SELECT user_id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Insert new admin user
+    const [result] = await pool.execute(
+      `INSERT INTO users (name, email, password, organization, designation, phone, address, role, status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 'active')`,
+      [name, email, hashedPassword, organization, designation, phone, address]
+    );
+
+    // Get the created user (without password)
+    const [users] = await pool.execute(
+      'SELECT user_id, name, email, role, organization, designation, phone, address, status, created_at FROM users WHERE user_id = ?',
+      [result.insertId]
+    );
+
+    // Log activity
+    await pool.execute(
+      'INSERT INTO activity_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)',
+      [req.user.user_id, 'ADMIN_CREATE_ADMIN', JSON.stringify({ 
+        createdUserId: result.insertId, 
+        email, 
+        organization 
+      }), req.ip]
+    );
+
+    console.log(`Admin ${req.user.email} created admin account: ${email}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin account created successfully',
+      data: users[0]
+    });
+  } catch (error) {
+    console.error('Create admin account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create admin account'
+    });
+  }
+};
+
 // Admin: Get all users with filters
 const getAllUsers = async (req, res) => {
   try {
@@ -350,7 +410,7 @@ const getAllUsers = async (req, res) => {
     
     // Simple query without any conditions first
     const [allUsers] = await pool.execute(
-      'SELECT user_id, name, email, role, organization, designation, status, created_at, updated_at FROM users ORDER BY created_at DESC'
+      'SELECT user_id, name, email, role, organization, designation, phone, address, status, created_at, updated_at FROM users ORDER BY created_at DESC'
     );
 
     console.log('Successfully fetched users:', allUsers.length);
@@ -728,6 +788,7 @@ module.exports = {
   updateProfile,
   changePassword,
   createSchoolAccount,
+  createAdminAccount,
   getAllUsers,
   getUserById,
   updateUser,

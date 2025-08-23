@@ -1,7 +1,9 @@
 // API Configuration
 
 
-const API_BASE_URL ='https://resources.bylinelms.com/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://resources.bylinelms.com/api'
+  : 'http://localhost:5000/api';
 
 
 export const API_ENDPOINTS = {
@@ -13,6 +15,7 @@ export const API_ENDPOINTS = {
   // User endpoints
   USERS: `${API_BASE_URL}/auth/admin/users`,
   USER_PROFILE: `${API_BASE_URL}/users/profile`,
+  USER_BY_ID: (id: number) => `${API_BASE_URL}/auth/admin/users/${id}`,
   
   // Resource endpoints
   RESOURCES: `${API_BASE_URL}/resources`,

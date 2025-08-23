@@ -23,6 +23,7 @@ router.put('/change-password', verifyToken, authController.changePassword);
 
 // Admin routes
 router.post('/admin/users/schools', verifyToken, requireAdmin, validateSchoolAccountCreation, authController.createSchoolAccount);
+router.post('/admin/users/admins', verifyToken, requireAdmin, validateSchoolAccountCreation, authController.createAdminAccount);
 router.get('/admin/users', verifyToken, requireAdmin, validatePagination, authController.getAllUsers);
 router.get('/admin/users/:userId', verifyToken, requireAdmin, validateUserId, authController.getUserById);
 router.put('/admin/users/:userId', verifyToken, requireAdmin, validateUserId, validateAdminUserUpdate, authController.updateUser);

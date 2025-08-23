@@ -18,7 +18,7 @@ export interface Resource {
   tags: string[];
   fileUrl?: string;
   previewImage?: string;
-  status: 'submitted' | 'review' | 'approved' | 'published';
+  status: 'submitted' | 'review' | 'approved' | 'published' | 'draft';
   likes: number;
   comments: number;
 }
