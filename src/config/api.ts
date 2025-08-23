@@ -17,6 +17,9 @@ export const API_ENDPOINTS = {
   USER_PROFILE: `${API_BASE_URL}/users/profile`,
   USER_BY_ID: (id: number) => `${API_BASE_URL}/auth/admin/users/${id}`,
   
+  // Admin dashboard endpoints
+  DASHBOARD_STATS: `${API_BASE_URL}/admin/dashboard`,
+  
   // Resource endpoints
   RESOURCES: `${API_BASE_URL}/resources`,
   RESOURCES_ALL: `${API_BASE_URL}/resources/all`,

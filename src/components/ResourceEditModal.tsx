@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
 import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2, Plus, Image } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { RichTextEditor } from './RichTextEditor';
 
 interface Resource {
   resource_id: number;
@@ -408,13 +409,10 @@ const ResourceEditModal: React.FC<ResourceEditModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Description *
             </label>
-            <textarea
+            <RichTextEditor
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, description: value })}
               placeholder="Describe your resource and how it can be used..."
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
               disabled={isLoading}
             />
           </div>

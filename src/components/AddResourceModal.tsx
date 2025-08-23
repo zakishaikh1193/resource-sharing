@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
 import { X, Upload, FileText, Video, Presentation, Activity, ClipboardCheck, AlertCircle, CheckCircle, Loader2, Plus, Image } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { RichTextEditor } from './RichTextEditor';
 
 interface AddResourceModalProps {
   isOpen: boolean;
@@ -610,20 +611,12 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
             <label className="block text-sm font-semibold text-gray-700">
               Description *
             </label>
-            <div className="relative">
-              <textarea
-                required
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none transition-all duration-200 bg-gray-50 focus:bg-white"
-                placeholder="Describe your resource and how it can be used..."
-                disabled={isLoading}
-              />
-              <div className="absolute top-4 right-4 pointer-events-none">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              </div>
-            </div>
+            <RichTextEditor
+              value={formData.description}
+              onChange={(value) => setFormData({ ...formData, description: value })}
+              placeholder="Describe your resource and how it can be used..."
+              disabled={isLoading}
+            />
           </div>
 
           {/* Resource Type */}

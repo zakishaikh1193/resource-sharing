@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
+import { RichTextEditor } from './RichTextEditor';
 
 interface Tag {
   tag_id: number;
@@ -99,13 +100,10 @@ const TagModal: React.FC<TagModalProps> = ({
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
               Description
             </label>
-            <textarea
-              id="description"
+            <RichTextEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(value) => setDescription(value)}
               placeholder="Enter tag description (optional)"
-              rows={3}
             />
           </div>
 

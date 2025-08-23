@@ -141,9 +141,10 @@ const ResourceViewModal: React.FC<ResourceViewModalProps> = ({
                  {/* Title and Description */}
                  <div>
                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{resource.title}</h3>
-                   <p className="text-gray-600 leading-relaxed">
-                     {resource.description}
-                   </p>
+                   <div 
+                     className="text-gray-600 leading-relaxed prose prose-sm max-w-none"
+                     dangerouslySetInnerHTML={{ __html: resource.description }}
+                   />
                  </div>
 
                  {/* Metadata Grid */}

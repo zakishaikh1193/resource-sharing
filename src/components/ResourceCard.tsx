@@ -78,116 +78,97 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   };
 
   return (
-         <div 
-       className={`
-         bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-3 cursor-pointer w-96
-         hover:shadow-md hover:border-blue-300 transition-all duration-200 group
-         ${isDragging ? 'rotate-3 shadow-lg scale-105' : ''}
-       `}
-       onClick={() => onView?.(resource)}
-     >
-             {/* Header */}
-       <div className="flex items-start justify-between mb-3">
-        <div className={`p-2 rounded-lg ${typeColors[resource.type]}`}>
-          <TypeIcon size={16} />
+    <div 
+      className={`
+        bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden cursor-pointer w-96
+        hover:shadow-xl hover:border-purple-200 transition-all duration-300 group
+        ${isDragging ? 'rotate-2 shadow-2xl scale-105' : ''}
+      `}
+      onClick={() => onView?.(resource)}
+    >
+      {/* Preview Image */}
+      {resource.previewImage && (
+        <div className="relative overflow-hidden">
+          <img 
+            src={resource.previewImage} 
+            alt={resource.title}
+            className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+
+
+          {/* Admin Actions Overlay */}
+          {user?.role === 'admin' && viewMode === 'edit' && (
+            <div className="absolute top-3 right-3 flex items-center space-x-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(resource);
+                }}
+                className="p-2 bg-white/90 hover:bg-white text-blue-600 hover:text-blue-700 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+              >
+                <Edit size={16} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(resource.id);
+                }}
+                className="p-2 bg-white/90 hover:bg-white text-red-600 hover:text-red-700 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
         </div>
-                 <div className="flex items-center space-x-2">
-           {user?.role === 'admin' && viewMode === 'edit' && (
-             <div className="flex items-center space-x-1">
-               <button
-                 onClick={() => onEdit?.(resource)}
-                 className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-               >
-                 <Edit size={14} />
-               </button>
-               <button
-                 onClick={() => onDelete?.(resource.id)}
-                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-               >
-                 <Trash2 size={14} />
-               </button>
-             </div>
-           )}
-         </div>
-      </div>
+      )}
 
-                    {/* Preview Image */}
-       {resource.previewImage && (
-         <div className="mb-3 rounded-lg overflow-hidden">
-           <img 
-             src={resource.previewImage} 
-             alt={resource.title}
-             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-           />
-         </div>
-       )}
-
-             {/* Content */}
-       <div className="mb-3">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+      {/* Content */}
+      <div className="p-6">
+        {/* Title */}
+        <h3 className="font-bold text-xl text-gray-900 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors duration-200 leading-tight">
           {resource.title}
         </h3>
-        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-          {resource.description}
+        
+        {/* Description - Plain text only for cards */}
+        <p className="text-gray-600 line-clamp-2 mb-4 leading-relaxed">
+          {(() => {
+            // Strip HTML tags and get plain text
+            const plainText = resource.description.replace(/<[^>]*>/g, '');
+            // Take first 20 letters
+            const firstTwentyLetters = plainText.trim().substring(0, 20);
+            return firstTwentyLetters + (plainText.trim().length > 20 ? '...' : '');
+          })()}
         </p>
-      </div>
 
-             {/* Tags */}
-       <div className="flex flex-wrap gap-1 mb-3">
-        {resource.tags.slice(0, 3).map((tag, index) => (
-          <span
-            key={index}
-            className={`px-2 py-1 text-xs font-medium rounded-full border ${getTagColor(index)}`}
-          >
-            {tag}
-          </span>
-        ))}
-        {resource.tags.length > 3 && (
-          <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md">
-            +{resource.tags.length - 3} more
-          </span>
-        )}
-      </div>
-
-             {/* Footer */}
-       <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-        <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-            {resource.author.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          {/* Author Info */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg">
+              {resource.author.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">{resource.author.name}</p>
+              <div className="flex items-center space-x-1 text-xs text-gray-500">
+                <Calendar size={12} />
+                <span>{new Date(resource.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
           </div>
-          <span>{resource.author.name}</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <Calendar size={12} />
-          <span>{resource.createdAt}</span>
-        </div>
-      </div>
 
-             {/* Status Badge */}
-       <div className="mt-2">
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          resource.status === 'published' 
-            ? 'bg-green-100 text-green-800' 
-            : resource.status === 'draft'
-            ? 'bg-yellow-100 text-yellow-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}>
-          {resource.status}
-        </span>
-      </div>
-
-             {/* View Button - Centered at Bottom */}
-       <div className="mt-3 flex justify-center">
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent card click when button is clicked
-            onView?.(resource);
-          }}
-          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105 text-sm font-medium"
-        >
-          <BookOpen size={16} />
-          <span>View</span>
-        </button>
+          {/* Status Badge */}
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
+            resource.status === 'published' 
+              ? 'bg-green-100 text-green-800 border-2 border-green-200' 
+              : resource.status === 'draft'
+              ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200'
+              : 'bg-gray-100 text-gray-800 border-2 border-gray-200'
+          }`}>
+            {resource.status.charAt(0).toUpperCase() + resource.status.slice(1)}
+          </span>
+        </div>
       </div>
     </div>
   );

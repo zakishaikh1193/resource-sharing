@@ -104,6 +104,21 @@ const AdminDashboard: React.FC = () => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   
+  // Dashboard statistics state
+  const [dashboardStats, setDashboardStats] = useState<{
+    totalUsers: number;
+    totalSchools: number;
+    totalResources: number;
+    totalDownloads: number;
+    totalViews: number;
+  }>({
+    totalUsers: 0,
+    totalSchools: 0,
+    totalResources: 0,
+    totalDownloads: 0,
+    totalViews: 0
+  });
+  
   // Content management mode state
   const [contentMode, setContentMode] = useState<'view' | 'edit'>('view');
   
@@ -131,6 +146,7 @@ const AdminDashboard: React.FC = () => {
     fetchSubjects();
     fetchResourceTypes();
     fetchTags();
+    fetchDashboardStats();
   }, [token]);
 
   // Handle click outside to close user dropdown
@@ -170,6 +186,28 @@ const AdminDashboard: React.FC = () => {
       console.error('Error fetching users:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDashboardStats = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(API_ENDPOINTS.DASHBOARD_STATS, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setDashboardStats(data.data.stats);
+      } else {
+        console.error('Failed to fetch dashboard stats:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
     }
   };
 
@@ -515,9 +553,9 @@ const AdminDashboard: React.FC = () => {
   });
 
   const stats = {
-    total: users.length,
+    total: dashboardStats.totalUsers,
     admins: users.filter(u => u.role === 'admin').length,
-    schools: users.filter(u => u.role === 'school').length,
+    schools: dashboardStats.totalSchools,
     active: users.filter(u => u.status === 'active').length,
     activeSchools: users.filter(u => u.role === 'school' && u.status === 'active').length,
     inactive: users.filter(u => u.status === 'inactive').length,
@@ -525,11 +563,11 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resourceStats = {
-    total: resources.length,
+    total: dashboardStats.totalResources,
     published: resources.filter(r => r.status === 'published').length,
     draft: resources.filter(r => r.status === 'draft').length,
-    totalDownloads: resources.reduce((sum, r) => sum + (r.download_count || 0), 0),
-    totalViews: resources.reduce((sum, r) => sum + (r.view_count || 0), 0),
+    totalDownloads: dashboardStats.totalDownloads,
+    totalViews: dashboardStats.totalViews,
   };
 
   const handleCreateSchool = async (schoolData: any) => {
@@ -1207,7 +1245,13 @@ const AdminDashboard: React.FC = () => {
                                 
                                 {/* Description */}
                                 <p className="text-xs text-gray-600 line-clamp-1 leading-relaxed mb-2">
-                                  {resource.description}
+                                  {(() => {
+                                    // Strip HTML tags and get plain text
+                                    const plainText = resource.description.replace(/<[^>]*>/g, '');
+                                    // Take first 20 letters
+                                    const firstTwentyLetters = plainText.trim().substring(0, 20);
+                                    return firstTwentyLetters + (plainText.trim().length > 20 ? '...' : '');
+                                  })()}
                                 </p>
 
                                 {/* Subject and Type */}

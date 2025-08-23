@@ -951,7 +951,13 @@ const SchoolDashboard: React.FC = () => {
                                    
                                    {/* Description */}
                                    <p className="text-xs text-gray-600 line-clamp-1 leading-relaxed mb-2">
-                                     {resource.description}
+                                     {(() => {
+                                       // Strip HTML tags and get plain text
+                                       const plainText = resource.description.replace(/<[^>]*>/g, '');
+                                                                               // Take first 20 letters
+                                        const firstTwentyLetters = plainText.trim().substring(0, 20);
+                                        return firstTwentyLetters + (plainText.trim().length > 20 ? '...' : '');
+                                     })()}
                                    </p>
 
                                    {/* Subject and Type */}
